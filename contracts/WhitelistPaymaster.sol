@@ -3,7 +3,9 @@ pragma experimental ABIEncoderV2;
 
 import "./AcceptEverythingPaymaster.sol";
 
-//a paymaster that requires a hash calculation based on sender and its nonce.
+///a sample paymaster that has whitelists for senders and targets.
+/// - if at least one sender is whitelisted, then ONLY whitelisted senders are allowed.
+/// - if at least one target is whitelisted, then ONLY whitelisted targets are allowed.
 contract WhitelistPaymaster is AcceptEverythingPaymaster {
 
     bool useSenderWhitelist;
@@ -17,7 +19,7 @@ contract WhitelistPaymaster is AcceptEverythingPaymaster {
     }
     function whitelistTarget(address target) public onlyOwner {
         targetWhitelist[target]=true;
-        useSenderWhitelist = true;
+        useTargetWhitelist = true;
     }
 
     function acceptRelayedCall(
