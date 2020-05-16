@@ -11,6 +11,8 @@
   "devDependencies": {
     "@openeth/truffle-typings": "^0.0.5",
     "@openzeppelin/test-helpers": "^0.5.5",
+    "@types/chai": "^4.2.11",
+    "@types/web3": "^1.2.2",
     "solidity-string-utils": "^0.0.4",
     "ts-node": "^8.10.1",
     "typechain": "^2.0.0",

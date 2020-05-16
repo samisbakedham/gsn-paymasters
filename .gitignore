@@ -2,3 +2,6 @@ node_modules
 build
 /.secret
 /types/truffle-contracts/
+artifacts/
+cache/
+dist/

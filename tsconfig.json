@@ -28,7 +28,6 @@
     "types": [
       "node",
       "truffle-contracts",
-      "chai-bn"
     ]
   },
   "include": [
