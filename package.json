@@ -17,7 +17,8 @@
     "ts-node": "^8.10.1",
     "typechain": "^2.0.0",
     "typechain-target-trufflehotfix": "0.0.4-alpha",
-    "typescript": "^3.9.2"
+    "typescript": "^3.9.2",
+    "web3": "^1.2.7"
   },
   "scripts": {
     "generate": "rm -rf ./build/contracts && npx truffle compile && typechain --target trufflehotfix './build/contracts/**/*.json'",

@@ -1,4 +1,6 @@
-const {createHashcashAsyncApproval} = require("../src/HashCashApproval")
+const {
+    createHashcashAsyncApproval, calculateHashcashApproval, calculateHashcash
+} = require("../src/HashCashApproval")
 
 const {RelayProvider} = require("@opengsn/gsn")
 const GsnTestEnvironment = require('@opengsn/gsn/dist/GsnTestEnvironment').default
@@ -74,6 +76,30 @@ contract('HashcashPaymaster', ([from]) => {
     it("should succeed with proper difficulty difficulty", async () => {
         const p = new RelayProvider(web3.currentProvider, gsnConfig, {
             asyncApprovalData: createHashcashAsyncApproval(15)
+        })
+        SampleRecipient.web3.setProvider(p)
+
+        await s.something()
+        await s.something()
+        await s.something()
+    })
+
+    it('calculateHashCash should call periodically a callback', async () => {
+        let counter=0
+        async function cb() { counter++; return true }
+        //15 bit difficulty 2^12 =~ 4096. avg counter 2000
+        const hash = await calculateHashcash('0x'.padEnd(42,'1'), 1, 12, 1000, cb)
+        assert.isAtLeast(counter,3)
+    })
+
+    it('should calculate approval in advance', async () => {
+        approval = await calculateHashcashApproval(web3, from, s.address, pm.address)
+        console.log( 'approval=', approval)
+        const p = new RelayProvider(web3.currentProvider, gsnConfig, {
+            asyncApprovalData: async (req) => {
+                console.log('req=',req)
+                return approval
+            }
         })
         SampleRecipient.web3.setProvider(p)
 

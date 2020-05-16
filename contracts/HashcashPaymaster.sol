@@ -2,7 +2,6 @@ pragma solidity ^0.6.2;
 pragma experimental ABIEncoderV2;
 
 import "./AcceptEverythingPaymaster.sol";
-import "solidity-string-utils/StringUtils.sol";
 
 interface HashcashDifficulty {
     function difficulty() external returns (uint8);
@@ -19,8 +18,6 @@ interface HashcashDifficulty {
 /// The "difficulty" level is the number of zero bits at the generated hash.
 /// a value of 15 requires roughly 32000 iterations and take ~0.5 second on a normal PC
 contract HashcashPaymaster is AcceptEverythingPaymaster, HashcashDifficulty {
-
-    using StringUtils for *;
 
     uint8 public override difficulty;
     constructor(uint8 _difficulty) public {

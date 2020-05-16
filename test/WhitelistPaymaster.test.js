@@ -10,20 +10,20 @@ const relayHubAddress = require('../build/gsn/RelayHub').address
 const forwarderAddress = require('../build/gsn/Forwarder').address
 const stakeManagerAddress = require('../build/gsn/StakeManager').address
 
-contract.only('WhitelistPaymaster', ([from, another]) => {
+contract('WhitelistPaymaster', ([from, another]) => {
 
     let pm
     let s //: SampleRecipientInstance
     let s1 //: SampleRecipientInstance
     let gsnConfig
     before(async () => {
-        // const {
-        //     deploymentResult: {
-        //         relayHubAddress,
-        //         stakeManagerAddress,
-        //         forwarderAddress
-        //     }
-        // } = await GsnTestEnvironment.startGsn('localhost')
+        const {
+            deploymentResult: {
+                relayHubAddress,
+                stakeManagerAddress,
+                forwarderAddress
+            }
+        } = await GsnTestEnvironment.startGsn('localhost')
 
         s = await SampleRecipient.new()
         s1 = await SampleRecipient.new()
