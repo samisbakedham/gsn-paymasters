@@ -1,12 +1,14 @@
 {
-  "name": "gsn-paymasters",
+  "name": "@opengsn/paymasters",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@opengsn/gsn": "^0.9.0",
     "web3-eth-abi": "^1.2.7",
     "web3-utils": "^1.2.7"
+  },
+  "peerDependencies": {
+    "@opengsn/gsn": "^0.9.0"
   },
   "devDependencies": {
     "@openeth/truffle-typings": "^0.0.5",
