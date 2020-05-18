@@ -1,6 +1,6 @@
 {
   "name": "@opengsn/paymasters",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
@@ -25,5 +25,10 @@
   "scripts": {
     "generate": "rm -rf ./build/contracts && npx truffle compile && typechain --target trufflehotfix './build/contracts/**/*.json'",
     "test": "truffle test"
-  }
+  },
+  "files": [
+    "src",
+    "build/contracts",
+    "contracts/*.sol"
+  ]
 }

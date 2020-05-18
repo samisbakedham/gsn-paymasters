@@ -2,6 +2,10 @@ const {keccak256, toBN} = require('web3-utils')
 const RelayRequest = require("@opengsn/gsn/dist/src/common/EIP712/RelayRequest");
 const abi = require('web3-eth-abi')
 
+const HashcashDifficulty = require('../build/contracts/HashCashDifficulty')
+const ITrustedForwarder = require('../build/contracts/ITrustedForwarder')
+const IRelayRecipient = require('../build/contracts/IRelayRecipient')
+
 /**
  * low-level hashcash calculation for the given address and nonce
  * This value should be passed as approvalData for the HashcashPaymaster
@@ -59,10 +63,6 @@ function createHashcashAsyncApproval(difficulty, interval, callback) {
         return val
     }
 }
-
-const HashcashDifficulty = require('../build/contracts/HashCashDifficulty')
-const ITrustedForwarder = require('../build/contracts/ITrustedForwarder')
-const IRelayRecipient = require('../build/contracts/IRelayRecipient')
 
 //helper: call the "call()" method, and throw the given string in case of error
 // (most likely - object doens't support this method..)
