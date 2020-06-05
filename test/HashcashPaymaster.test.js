@@ -73,7 +73,8 @@ contract('HashcashPaymaster', ([from]) => {
         return expectRevert(s.something(), 'difficulty not met')
     })
 
-    it("should succeed with proper difficulty difficulty", async () => {
+    it('should succeed with proper difficulty difficulty', async function () {
+        this.timeout(35000)
         const p = new RelayProvider(web3.currentProvider, gsnConfig, {
             asyncApprovalData: createHashcashAsyncApproval(15)
         })
@@ -105,8 +106,8 @@ contract('HashcashPaymaster', ([from]) => {
 
         await s.something()
     })
-    it("should refuse to reuse the same approvalData", async () => {
-
+    it("should refuse to reuse the same approvalData", async function () {
+        this.timeout(35000)
         //read next valid hashash approval data, and always return it.
         const approvalfunc = createHashcashAsyncApproval(15)
         let saveret

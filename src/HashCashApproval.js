@@ -2,7 +2,7 @@ const {keccak256, toBN} = require('web3-utils')
 const RelayRequest = require("@opengsn/gsn/dist/src/common/EIP712/RelayRequest");
 const abi = require('web3-eth-abi')
 
-const HashcashDifficulty = require('../build/contracts/HashCashDifficulty')
+const HashcashDifficulty = require('../build/contracts/HashcashDifficulty')
 const ITrustedForwarder = require('../build/contracts/ITrustedForwarder')
 const IRelayRecipient = require('../build/contracts/IRelayRecipient')
 

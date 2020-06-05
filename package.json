@@ -12,10 +12,14 @@
   },
   "devDependencies": {
     "@openeth/truffle-typings": "^0.0.5",
+    "@opengsn/gsn": "0.9.0",
     "@openzeppelin/test-helpers": "^0.5.5",
+    "@truffle/hdwallet-provider": "1.0.35",
     "@types/chai": "^4.2.11",
     "@types/web3": "^1.2.2",
+    "run-with-testrpc": "0.3.1",
     "solidity-string-utils": "^0.0.4",
+    "truffle": "5.1.28",
     "ts-node": "^8.10.1",
     "typechain": "^2.0.0",
     "typechain-target-trufflehotfix": "0.0.4-alpha",
@@ -24,7 +28,8 @@
   },
   "scripts": {
     "generate": "rm -rf ./build/contracts && npx truffle compile && typechain --target trufflehotfix './build/contracts/**/*.json'",
-    "test": "truffle test"
+    "test": "yarn generate && run-with-testrpc --hardfork 'istanbul' --gasLimit 100000000 'yarn truffle-test'",
+    "truffle-test": "gsn deploy && truffle test"
   },
   "files": [
     "src",
