@@ -7,6 +7,8 @@ const GsnTestEnvironment = require('@opengsn/gsn/dist/GsnTestEnvironment').defau
 const {expectRevert} = require('@openzeppelin/test-helpers')
 // import {SampleRecipientInstance} from "../types/truffle-contracts";
 
+require('source-map-support').install({ errorFormatterForce: true })
+
 const HashcashPaymaster = artifacts.require('HashcashPaymaster')
 const SampleRecipient = artifacts.require('SampleRecipient')
 
