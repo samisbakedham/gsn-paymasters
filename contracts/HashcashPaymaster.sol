@@ -19,6 +19,10 @@ interface HashcashDifficulty {
 /// a value of 15 requires roughly 32000 iterations and take ~0.5 second on a normal PC
 contract HashcashPaymaster is AcceptEverythingPaymaster, HashcashDifficulty {
 
+    function versionPaymaster() external view override virtual returns (string memory){
+        return "2.0.0-alpha.1+opengsn.hashcash.ipaymaster";
+    }
+
     uint8 public override difficulty;
     constructor(uint8 _difficulty) public {
         difficulty = _difficulty;
@@ -26,6 +30,7 @@ contract HashcashPaymaster is AcceptEverythingPaymaster, HashcashDifficulty {
 
     function acceptRelayedCall(
         GSNTypes.RelayRequest calldata relayRequest,
+        bytes calldata signature,
         bytes calldata approvalData,
         uint256 maxPossibleCharge
     ) external override virtual view

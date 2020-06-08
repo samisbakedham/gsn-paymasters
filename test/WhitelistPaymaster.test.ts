@@ -1,20 +1,17 @@
+import {SampleRecipientInstance, WhitelistPaymasterInstance} from "../types/truffle-contracts";
+
 const {RelayProvider} = require("@opengsn/gsn")
 const GsnTestEnvironment = require('@opengsn/gsn/dist/GsnTestEnvironment').default
 const {expectRevert} = require('@openzeppelin/test-helpers')
-// import {SampleRecipientInstance} from "../types/truffle-contracts";
 
 const WhitelistPaymaster = artifacts.require('WhitelistPaymaster')
 const SampleRecipient = artifacts.require('SampleRecipient')
 
-const relayHubAddress = require('../build/gsn/RelayHub').address
-const forwarderAddress = require('../build/gsn/Forwarder').address
-const stakeManagerAddress = require('../build/gsn/StakeManager').address
-
 contract('WhitelistPaymaster', ([from, another]) => {
 
-    let pm
-    let s //: SampleRecipientInstance
-    let s1 //: SampleRecipientInstance
+    let pm: WhitelistPaymasterInstance
+    let s: SampleRecipientInstance
+    let s1: SampleRecipientInstance
     let gsnConfig
     before(async () => {
         const {
@@ -40,10 +37,12 @@ contract('WhitelistPaymaster', ([from, another]) => {
         console.log('s1',s1.address)
         gsnConfig = {
             relayHubAddress,
+            forwarderAddress,
             stakeManagerAddress,
             paymasterAddress: pm.address
         };
         const p = new RelayProvider(web3.currentProvider, gsnConfig)
+        // @ts-ignore
         SampleRecipient.web3.setProvider(p)
     })
 

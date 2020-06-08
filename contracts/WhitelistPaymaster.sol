@@ -24,6 +24,7 @@ contract WhitelistPaymaster is AcceptEverythingPaymaster {
 
     function acceptRelayedCall(
         GSNTypes.RelayRequest calldata relayRequest,
+        bytes calldata signature,
         bytes calldata approvalData,
         uint256 maxPossibleCharge
     ) external override virtual view

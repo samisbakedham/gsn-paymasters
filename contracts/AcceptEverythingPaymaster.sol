@@ -8,8 +8,13 @@ import "@opengsn/gsn/contracts/utils/GsnUtils.sol";
 // this paymaster accepts any request.
 contract AcceptEverythingPaymaster is BasePaymaster {
 
+    function versionPaymaster() external view override virtual returns (string memory){
+        return "2.0.0-alpha.1+opengsn.accepteverything.ipaymaster";
+    }
+
     function acceptRelayedCall(
         GSNTypes.RelayRequest calldata relayRequest,
+        bytes calldata signature,
         bytes calldata approvalData,
         uint256 maxPossibleCharge
     ) external override virtual view

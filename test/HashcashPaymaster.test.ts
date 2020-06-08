@@ -1,13 +1,16 @@
-const {
+import {
     createHashcashAsyncApproval, calculateHashcashApproval, calculateHashcash
-} = require("../src/HashCashApproval")
+} from "../src/HashCashApproval"
+import {HashcashPaymasterInstance, SampleRecipientInstance} from "../types/truffle-contracts";
+import {GSNConfig} from "@opengsn/gsn";
+import RelayRequest from "@opengsn/gsn/dist/src/common/EIP712/RelayRequest";
 
 const {RelayProvider} = require("@opengsn/gsn")
 const GsnTestEnvironment = require('@opengsn/gsn/dist/GsnTestEnvironment').default
 const {expectRevert} = require('@openzeppelin/test-helpers')
 // import {SampleRecipientInstance} from "../types/truffle-contracts";
 
-require('source-map-support').install({ errorFormatterForce: true })
+require('source-map-support').install({errorFormatterForce: true})
 
 const HashcashPaymaster = artifacts.require('HashcashPaymaster')
 const SampleRecipient = artifacts.require('SampleRecipient')
@@ -18,9 +21,10 @@ const SampleRecipient = artifacts.require('SampleRecipient')
 
 contract('HashcashPaymaster', ([from]) => {
 
-    let pm
-    let s //: SampleRecipientInstance
-    let gsnConfig
+    let pm: HashcashPaymasterInstance
+    let s: SampleRecipientInstance
+    let gsnConfig: Partial<GSNConfig>
+
     before(async () => {
         const {
             deploymentResult: {
@@ -41,6 +45,7 @@ contract('HashcashPaymaster', ([from]) => {
 
         gsnConfig = {
             relayHubAddress,
+            forwarderAddress,
             stakeManagerAddress,
             paymasterAddress: pm.address
         };
@@ -51,6 +56,7 @@ contract('HashcashPaymaster', ([from]) => {
     it("should fail to send without approvalData", async () => {
 
         const p = new RelayProvider(web3.currentProvider, gsnConfig)
+        // @ts-ignore
         SampleRecipient.web3.setProvider(p)
         await expectRevert(s.something(), 'no hash in approvalData')
     })
@@ -60,6 +66,7 @@ contract('HashcashPaymaster', ([from]) => {
         const p = new RelayProvider(web3.currentProvider, gsnConfig, {
             asyncApprovalData: async () => '0x'.padEnd(2 + 64 * 2, '0')
         })
+        // @ts-ignore
         SampleRecipient.web3.setProvider(p)
 
         await expectRevert(s.something(), 'wrong hash')
@@ -70,6 +77,7 @@ contract('HashcashPaymaster', ([from]) => {
         const p = new RelayProvider(web3.currentProvider, gsnConfig, {
             asyncApprovalData: createHashcashAsyncApproval(1)
         })
+        // @ts-ignore
         SampleRecipient.web3.setProvider(p)
 
         return expectRevert(s.something(), 'difficulty not met')
@@ -80,6 +88,7 @@ contract('HashcashPaymaster', ([from]) => {
         const p = new RelayProvider(web3.currentProvider, gsnConfig, {
             asyncApprovalData: createHashcashAsyncApproval(15)
         })
+        // @ts-ignore
         SampleRecipient.web3.setProvider(p)
 
         await s.something()
@@ -88,22 +97,28 @@ contract('HashcashPaymaster', ([from]) => {
     })
 
     it('calculateHashCash should call periodically a callback', async () => {
-        let counter=0
-        async function cb() { counter++; return true }
+        let counter = 0
+
+        async function cb() {
+            counter++;
+            return true
+        }
+
         //15 bit difficulty 2^12 =~ 4096. avg counter 2000
-        const hash = await calculateHashcash('0x'.padEnd(42,'1'), 1, 12, 1000, cb)
-        assert.isAtLeast(counter,3)
+        const hash = await calculateHashcash('0x'.padEnd(42, '1'), 1, 12, 1000, cb)
+        assert.isAtLeast(counter, 3)
     })
 
     it('should calculate approval in advance', async () => {
-        approval = await calculateHashcashApproval(web3, from, s.address, pm.address)
-        console.log( 'approval=', approval)
+        const approval = await calculateHashcashApproval(web3, from, s.address, gsnConfig.forwarderAddress ?? '', pm.address)
+        console.log('approval=', approval)
         const p = new RelayProvider(web3.currentProvider, gsnConfig, {
-            asyncApprovalData: async (req) => {
-                console.log('req=',req)
+            asyncApprovalData: async (req: RelayRequest) => {
+                console.log('req=', req)
                 return approval
             }
         })
+        // @ts-ignore
         SampleRecipient.web3.setProvider(p)
 
         await s.something()
@@ -112,19 +127,21 @@ contract('HashcashPaymaster', ([from]) => {
         this.timeout(35000)
         //read next valid hashash approval data, and always return it.
         const approvalfunc = createHashcashAsyncApproval(15)
-        let saveret
+        let saveret: string
         const p = new RelayProvider(web3.currentProvider, gsnConfig, {
-            asyncApprovalData: async (request) => {
+            asyncApprovalData: async (request: RelayRequest) => {
                 saveret = await approvalfunc(request)
                 return saveret
             }
         })
+        // @ts-ignore
         SampleRecipient.web3.setProvider(p)
         await s.something()
 
         const p1 = new RelayProvider(web3.currentProvider, gsnConfig, {
-            asyncApprovalData: async (req) => Promise.resolve(saveret)
+            asyncApprovalData: async (req: RelayRequest) => Promise.resolve(saveret)
         })
+        // @ts-ignore
         SampleRecipient.web3.setProvider(p1)
         return expectRevert(s.something(), "wrong hash")
     })
