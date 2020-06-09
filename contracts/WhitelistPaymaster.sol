@@ -23,7 +23,7 @@ contract WhitelistPaymaster is AcceptEverythingPaymaster {
     }
 
     function acceptRelayedCall(
-        GSNTypes.RelayRequest calldata relayRequest,
+        ISignatureVerifier.RelayRequest calldata relayRequest,
         bytes calldata signature,
         bytes calldata approvalData,
         uint256 maxPossibleCharge

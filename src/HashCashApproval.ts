@@ -3,7 +3,7 @@ import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import abi from 'web3-eth-abi'
 
 import HashcashDifficulty from '../build/contracts/HashcashDifficulty.json'
-import ITrustedForwarder from '../build/contracts/ITrustedForwarder.json'
+import IForwarder from '../build/contracts/IForwarder.json'
 
 /**
  * low-level hashcash calculation for the given address and nonce
@@ -15,7 +15,7 @@ import ITrustedForwarder from '../build/contracts/ITrustedForwarder.json'
  * @param callback async callback to call. return "false" to abort. true to continue
  * @return the approvalData value (bytes32 hash, uint256 counter)
  */
-export async function calculateHashcash (senderAddress: string, senderNonce: number, difficulty: any, interval?: number, callback?: any): Promise<string | null> {
+export async function calculateHashcash (senderAddress: string, senderNonce: string, difficulty: any, interval?: number, callback?: any): Promise<string | null> {
   const diffMax = toBN(1).shln(256 - difficulty)
   let hashNonce = 0
   let intervalCount = 0
@@ -91,7 +91,7 @@ export async function calculateHashcashApproval (web3: Web3, senderAddr: string,
   const paymaster = new web3.eth.Contract(HashcashDifficulty.abi, hashcashPaymasterAddr).methods
   const difficulty = await checkedCall(paymaster.difficulty(), hashcashPaymasterAddr ?? 'undefined' + ': not A HashcashPaymaster')
   // @ts-expect-error
-  const forwarder = new web3.eth.Contract(ITrustedForwarder.abi, forwarderAddress).methods
+  const forwarder = new web3.eth.Contract(IForwarder.abi, forwarderAddress).methods
   const nonce = await checkedCall(forwarder.getNonce(senderAddr), 'No getNonce()')
 
   console.log('calling with addr=', senderAddr, 'nonce=', nonce, 'fwd=', forwarderAddress, 'recipient=', recipientAddr)

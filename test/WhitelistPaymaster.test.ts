@@ -2,7 +2,6 @@ import { SampleRecipientInstance, WhitelistPaymasterInstance } from '../types/tr
 
 import { RelayProvider } from '@opengsn/gsn'
 import GsnTestEnvironment from '@opengsn/gsn/dist/GsnTestEnvironment'
-// @ts-expect-error
 import { expectRevert } from '@openzeppelin/test-helpers'
 
 const WhitelistPaymaster = artifacts.require('WhitelistPaymaster')

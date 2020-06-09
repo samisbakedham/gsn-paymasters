@@ -2,6 +2,11 @@
   <dictionary name="alexf">
     <words>
       <w>hashcash</w>
+      <w>opengsn</w>
+      <w>openzeppelin</w>
+      <w>penalizer</w>
+      <w>spdx</w>
+      <w>uniswap</w>
     </words>
   </dictionary>
 </component>

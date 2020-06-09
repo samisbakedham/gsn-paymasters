@@ -13,7 +13,7 @@ contract AcceptEverythingPaymaster is BasePaymaster {
     }
 
     function acceptRelayedCall(
-        GSNTypes.RelayRequest calldata relayRequest,
+        ISignatureVerifier.RelayRequest calldata relayRequest,
         bytes calldata signature,
         bytes calldata approvalData,
         uint256 maxPossibleCharge
@@ -35,7 +35,7 @@ contract AcceptEverythingPaymaster is BasePaymaster {
         bool success,
         bytes32 preRetVal,
         uint256 gasUseWithoutPost,
-        GSNTypes.GasData calldata gasData
+        ISignatureVerifier.GasData calldata gasData
     ) external override virtual {
         (context, success, preRetVal, gasUseWithoutPost, gasData);
     }

@@ -23,6 +23,7 @@ module.exports = {
     project: ['./tsconfig.json', './tsconfig.eslint.json']
   },
   ignorePatterns: [
+    'gsn/',
     'dist/',
     'types/'
   ],
@@ -43,6 +44,9 @@ module.exports = {
       // otherwise it will raise an error in every JavaScript file
       files: ['*.ts'],
       rules: {
+        // this rule seems broken and results in false-positives
+        '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+        // ts-node we use to run tests fails on some 'ts-expect-error' directives
         '@typescript-eslint/prefer-ts-expect-error': ['warn'],
         // allow using '${val}' with numbers, bool and null types
         '@typescript-eslint/restrict-template-expressions': [

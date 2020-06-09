@@ -6,7 +6,6 @@ import { GSNConfig, RelayProvider } from '@opengsn/gsn'
 import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 
 import GsnTestEnvironment from '@opengsn/gsn/dist/GsnTestEnvironment'
-// @ts-expect-error
 import { expectRevert } from '@openzeppelin/test-helpers'
 
 // @ts-expect-error
@@ -103,7 +102,7 @@ contract('HashcashPaymaster', ([from]) => {
     }
 
     // 15 bit difficulty 2^12 =~ 4096. avg counter 2000
-    await calculateHashcash('0x'.padEnd(42, '1'), 1, 12, 1000, cb)
+    await calculateHashcash('0x'.padEnd(42, '1'), '1', 12, 1000, cb)
     assert.isAtLeast(counter, 3)
   })
 

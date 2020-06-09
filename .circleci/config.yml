@@ -12,6 +12,17 @@ jobs:
       - node/with-cache:
           steps:
             - run: npm install
+            - run:
+                name: Clone GSN repository
+                command: >-
+                  git clone https://github.com/opengsn/gsn.git &&
+                  cd gsn &&
+                  npm install &&
+                  npm run prepare &&
+                  cd .. &&
+                  mkdir npmprefix &&
+                  npm config set prefix ./npmprefix &&
+                  npm link gsn
             - run: npm test
 workflows:
     build-and-test:
