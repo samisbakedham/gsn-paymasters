@@ -19,6 +19,7 @@ contract AcceptEverythingPaymaster is BasePaymaster {
         uint256 maxPossibleCharge
     ) external override virtual view
     returns (bytes memory) {
+        (signature);
         (relayRequest, approvalData, maxPossibleCharge);
         return "";
     }

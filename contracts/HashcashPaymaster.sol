@@ -35,7 +35,7 @@ contract HashcashPaymaster is AcceptEverythingPaymaster, HashcashDifficulty {
         uint256 maxPossibleCharge
     ) external override virtual view
     returns (bytes memory) {
-        (relayRequest, approvalData, maxPossibleCharge);
+        (relayRequest, approvalData, maxPossibleCharge, signature);
 
         require(approvalData.length == 64, "no hash in approvalData");
         (bytes32 hash, uint256 hashNonce) = abi.decode(approvalData, (bytes32, uint256));

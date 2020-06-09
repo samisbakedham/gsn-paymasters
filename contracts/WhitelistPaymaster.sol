@@ -8,8 +8,8 @@ import "./AcceptEverythingPaymaster.sol";
 /// - if at least one target is whitelisted, then ONLY whitelisted targets are allowed.
 contract WhitelistPaymaster is AcceptEverythingPaymaster {
 
-    bool useSenderWhitelist;
-    bool useTargetWhitelist;
+    bool public useSenderWhitelist;
+    bool public useTargetWhitelist;
     mapping (address=>bool) public senderWhitelist;
     mapping (address=>bool) public targetWhitelist;
 
@@ -29,7 +29,7 @@ contract WhitelistPaymaster is AcceptEverythingPaymaster {
         uint256 maxPossibleCharge
     ) external override virtual view
     returns (bytes memory) {
-        (relayRequest, approvalData, maxPossibleCharge);
+        (relayRequest, approvalData, maxPossibleCharge, signature);
 
         if ( useSenderWhitelist ) {
             require( senderWhitelist[relayRequest.relayData.senderAddress], "sender not whitelisted");

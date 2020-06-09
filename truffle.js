@@ -11,25 +11,25 @@ module.exports = {
 
   networks: {
     development: {
-      host: '127.0.0.1',     // Localhost (default: none)
-      port: 8545,            // Standard Ethereum port (default: none)
-      network_id: '*',       // Any network (default: none)
+      host: '127.0.0.1', // Localhost (default: none)
+      port: 8545, // Standard Ethereum port (default: none)
+      network_id: '*' // Any network (default: none)
     },
 
     ropsten: {
-      provider: () => new HDWalletProvider(mnemonic(), `https://ropsten.infura.io/v3/` + infuraKey),
+      provider: () => new HDWalletProvider(mnemonic(), 'https://ropsten.infura.io/v3/' + infuraKey),
       network_id: 3,
-      skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+      skipDryRun: true // Skip dry run before migrations? (default: false for public nets )
     },
     rinkeby: {
-      provider: () => new HDWalletProvider(mnemonic(), `https://rinkeby.infura.io/v3/` + infuraKey),
-      network_id: 4,       // Ropsten's id
-      skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+      provider: () => new HDWalletProvider(mnemonic(), 'https://rinkeby.infura.io/v3/' + infuraKey),
+      network_id: 4, // Ropsten's id
+      skipDryRun: true // Skip dry run before migrations? (default: false for public nets )
     },
     kovan: {
-      provider: () => new HDWalletProvider(mnemonic(), `https://kovan.infura.io/v3/` + infuraKey),
+      provider: () => new HDWalletProvider(mnemonic(), 'https://kovan.infura.io/v3/' + infuraKey),
       network_id: 42,
-      skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+      skipDryRun: true // Skip dry run before migrations? (default: false for public nets )
     }
   },
 
@@ -42,8 +42,8 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: '0.6.8',    // Fetch exact version from solc-bin (default: truffle's version)
-      settings: {          // See the solidity docs for advice about optimization and evmVersion
+      version: '0.6.8', // Fetch exact version from solc-bin (default: truffle's version)
+      settings: { // See the solidity docs for advice about optimization and evmVersion
         optimizer: {
           enabled: false,
           runs: 200

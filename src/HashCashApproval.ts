@@ -1,10 +1,9 @@
-import {keccak256, toBN} from 'web3-utils'
-import RelayRequest from "@opengsn/gsn/dist/src/common/EIP712/RelayRequest"
+import { keccak256, toBN } from 'web3-utils'
+import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import abi from 'web3-eth-abi'
 
 import HashcashDifficulty from '../build/contracts/HashcashDifficulty.json'
 import ITrustedForwarder from '../build/contracts/ITrustedForwarder.json'
-import IRelayRecipient from '../build/contracts/IRelayRecipient.json'
 
 /**
  * low-level hashcash calculation for the given address and nonce
@@ -16,31 +15,31 @@ import IRelayRecipient from '../build/contracts/IRelayRecipient.json'
  * @param callback async callback to call. return "false" to abort. true to continue
  * @return the approvalData value (bytes32 hash, uint256 counter)
  */
-export async function calculateHashcash(senderAddress: string, senderNonce: number, difficulty: any, interval?: number, callback?: any) {
-    const diffMax = toBN(1).shln(256 - difficulty)
-    let hashNonce = 0;
-    let intervalCount = 0
-    while (true) {
-        // @ts-ignore
-        const params = abi.encodeParameters(['address', 'uint256', 'uint256'],
-            [senderAddress, senderNonce, hashNonce])
-        let hash = keccak256(params);
-        let val = toBN(hash);
-        if (val.lt(diffMax)) {
-            if (callback) {
-                await callback(difficulty)  //signal "done"
-            }
-            // @ts-ignore
-            return abi.encodeParameters(['bytes32', 'uint256'],
-                [hash, hashNonce])
-        }
-        hashNonce++
-        if (interval && intervalCount++ > interval) {
-            intervalCount = 0
-            if (!await callback(difficulty, hashNonce))
-                return null
-        }
+export async function calculateHashcash (senderAddress: string, senderNonce: number, difficulty: any, interval?: number, callback?: any): Promise<string | null> {
+  const diffMax = toBN(1).shln(256 - difficulty)
+  let hashNonce = 0
+  let intervalCount = 0
+  while (true) {
+    // @ts-ignore
+    const params = abi.encodeParameters(['address', 'uint256', 'uint256'],
+      [senderAddress, senderNonce, hashNonce])
+    const hash = keccak256(params)
+    const val = toBN(hash)
+    if (val.lt(diffMax)) {
+      if (callback != null) {
+        await callback(difficulty) // signal "done"
+      }
+      // @ts-ignore
+      return abi.encodeParameters(['bytes32', 'uint256'],
+        [hash, hashNonce])
     }
+    hashNonce++
+    if (interval != null && intervalCount++ > interval) {
+      intervalCount = 0
+      const cbresp = await callback(difficulty, hashNonce)
+      if (cbresp == null) { return null }
+    }
+  }
 }
 
 /**
@@ -55,26 +54,26 @@ export async function calculateHashcash(senderAddress: string, senderNonce: numb
  * @returns - an async function to pass as a parameter for "asyncApprovalData" of the
  *  RelayProvider. see the HashcashPaymaster.test.ts for usage example.
  */
-export function createHashcashAsyncApproval(difficulty: any, interval?: number, callback?: any): (relayRequest: RelayRequest) => Promise<string> {
-
-    return async function (relayRequest: RelayRequest): Promise<string> {
-        console.log('=== calculating approval')
-        const {senderAddress, senderNonce} = relayRequest.relayData
-        const val = calculateHashcash(senderAddress, senderNonce, difficulty, interval, callback)
-        console.log('=== done calculating approval')
-        return val
-    }
+export function createHashcashAsyncApproval (difficulty: any, interval?: number, callback?: any): (relayRequest: RelayRequest) => Promise<string | null> {
+  return async function (relayRequest: RelayRequest): Promise<string | null> {
+    console.log('=== calculating approval')
+    const { senderAddress, senderNonce } = relayRequest.relayData
+    const val = calculateHashcash(senderAddress, senderNonce, difficulty, interval, callback)
+    console.log('=== done calculating approval')
+    return await val
+  }
 }
 
-//helper: call the "call()" method, and throw the given string in case of error
+// helper: call the "call()" method, and throw the given string in case of error
 // (most likely - object doens't support this method..)
-async function checkedCall(method: any, str: string) {
-    try {
-        return await method.call()
-    } catch (e) {
-        console.log('==e', e)
-        throw new Error(str + ': ' + e)
-    }
+function checkedCall (method: any, str: string): any {
+  try {
+    return method.call()
+  } catch (e) {
+    console.log('==e', e)
+    // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+    throw new Error(str + ': ' + e)
+  }
 }
 
 /**
@@ -87,16 +86,14 @@ async function checkedCall(method: any, str: string) {
  * @param interval
  * @param callback
  */
-export async function calculateHashcashApproval(web3: Web3, senderAddr: string, recipientAddr: string, forwarderAddress: string, hashcashPaymasterAddr?: string, interval?: number, callback?: any) {
-    // @ts-ignore
-    const paymaster = new web3.eth.Contract(HashcashDifficulty.abi, hashcashPaymasterAddr).methods
-    const difficulty = await checkedCall(paymaster.difficulty(), hashcashPaymasterAddr + ': not A HashcashPaymaster')
-    // @ts-ignore
-    const recipient = new web3.eth.Contract(IRelayRecipient.abi, recipientAddr).methods
-    // @ts-ignore
-    const forwarder = new web3.eth.Contract(ITrustedForwarder.abi, forwarderAddress).methods
-    const nonce = await checkedCall(forwarder.getNonce(senderAddr), 'No getNonce()')
+export async function calculateHashcashApproval (web3: Web3, senderAddr: string, recipientAddr: string, forwarderAddress: string, hashcashPaymasterAddr?: string, interval?: number, callback?: any): Promise<string | null> {
+  // @ts-expect-error
+  const paymaster = new web3.eth.Contract(HashcashDifficulty.abi, hashcashPaymasterAddr).methods
+  const difficulty = await checkedCall(paymaster.difficulty(), hashcashPaymasterAddr ?? 'undefined' + ': not A HashcashPaymaster')
+  // @ts-expect-error
+  const forwarder = new web3.eth.Contract(ITrustedForwarder.abi, forwarderAddress).methods
+  const nonce = await checkedCall(forwarder.getNonce(senderAddr), 'No getNonce()')
 
-    console.log('calling with addr=', senderAddr, 'nonce=', nonce, 'fwd=', forwarderAddress, 'recipient=', recipientAddr)
-    return calculateHashcash(senderAddr, nonce, difficulty, interval, callback)
+  console.log('calling with addr=', senderAddr, 'nonce=', nonce, 'fwd=', forwarderAddress, 'recipient=', recipientAddr)
+  return await calculateHashcash(senderAddr, nonce, difficulty, interval, callback)
 }
