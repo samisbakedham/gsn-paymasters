@@ -2,7 +2,6 @@
 pragma solidity ^0.6.2;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@opengsn/gsn/contracts/RelayHub.sol";
@@ -14,7 +13,7 @@ import "../TokenPaymaster.sol";
  * Calculate the postRelayedCall gas usage for a TokenPaymaster.
  *
  */
-contract TokenGasCalculator is RelayHub, Ownable {
+contract TokenGasCalculator is RelayHub {
 
     //(The Paymaster calls back calculateCharge, deposotFor in the relayHub,
     //so the calculator has to implement them just like a real RelayHub
@@ -33,7 +32,7 @@ contract TokenGasCalculator is RelayHub, Ownable {
      * the above can be ran on a "forked" network, so that it will have the real token, uniswap instances,
      * but still leave no side-effect on the network.
      */
-    function calculatePostGas(TokenPaymaster paymaster) public onlyOwner returns (uint gasUsedByPostWithPreCharge, uint gasUsedByPostWithoutPreCharge) {
+    function calculatePostGas(TokenPaymaster paymaster) public returns (uint gasUsedByPost) {
         address paymasterAddress = address(paymaster);
         IERC20 token = paymaster.token();
         require(token.balanceOf(address(this)) >= 1000, "must move some tokens to calculator first");
@@ -45,23 +44,18 @@ contract TokenGasCalculator is RelayHub, Ownable {
 
         paymaster.setRelayHub(IRelayHub(address(this)));
 
-        ISignatureVerifier.GasData memory gasData = ISignatureVerifier.GasData(0, 1, 0, 0);
-        bytes memory ctx0 = abi.encode(this, uint(0));
-        //no precharge
+        GsnTypes.RelayData memory relayData = GsnTypes.RelayData(1, 0, 0, address(0), address(0), address(0));
         bytes memory ctx1 = abi.encode(this, uint(500));
         //with precharge
-        uint gasinit = gasleft();
-        paymaster.postRelayedCall(ctx0, true, bytes32(0), 100, gasData);
         uint gas0 = gasleft();
-        paymaster.postRelayedCall(ctx1, true, bytes32(0), 100, gasData);
+        paymaster.postRelayedCall(ctx1, true, bytes32(0), 100, relayData);
         uint gas1 = gasleft();
 
         token.transferFrom(paymasterAddress, address(this), token.balanceOf(paymasterAddress));
-        gasUsedByPostWithoutPreCharge = gasinit - gas0;
-        gasUsedByPostWithPreCharge = gas0 - gas1;
-        emit GasUsed(gasUsedByPostWithPreCharge, gasUsedByPostWithoutPreCharge);
+        gasUsedByPost = gas0 - gas1;
+        emit GasUsed(gasUsedByPost);
     }
 
-    event GasUsed(uint gasUsedByPostWithPreCharge, uint gasUsedByPostWithoutPreCharge);
+    event GasUsed(uint gasUsedByPost);
 }
 

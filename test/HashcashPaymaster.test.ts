@@ -5,12 +5,8 @@ import { HashcashPaymasterInstance, SampleRecipientInstance } from '../types/tru
 import { GSNConfig, RelayProvider } from '@opengsn/gsn'
 import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 
-import GsnTestEnvironment from '@opengsn/gsn/dist/GsnTestEnvironment'
+import GsnTestEnvironment from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
 import { expectRevert } from '@openzeppelin/test-helpers'
-
-// @ts-expect-error
-import sourceMapSupport from 'source-map-support'
-sourceMapSupport.install({ errorFormatterForce: true })
 
 const HashcashPaymaster = artifacts.require('HashcashPaymaster')
 const SampleRecipient = artifacts.require('SampleRecipient')
@@ -31,7 +27,6 @@ contract('HashcashPaymaster', ([from]) => {
         stakeManagerAddress,
         forwarderAddress
       }
-      // @ts-ignore
     } = await GsnTestEnvironment.startGsn('localhost')
 
     s = await SampleRecipient.new()
@@ -39,6 +34,7 @@ contract('HashcashPaymaster', ([from]) => {
 
     pm = await HashcashPaymaster.new(10)
     await pm.setRelayHub(relayHubAddress)
+    await pm.setTrustedForwarder(forwarderAddress)
     await web3.eth.sendTransaction({ from, to: pm.address, value: 1e18 })
 
     gsnConfig = {

@@ -23,7 +23,7 @@ contract WhitelistPaymaster is AcceptEverythingPaymaster {
     }
 
     function acceptRelayedCall(
-        ISignatureVerifier.RelayRequest calldata relayRequest,
+        GsnTypes.RelayRequest calldata relayRequest,
         bytes calldata signature,
         bytes calldata approvalData,
         uint256 maxPossibleCharge
@@ -32,10 +32,10 @@ contract WhitelistPaymaster is AcceptEverythingPaymaster {
         (relayRequest, approvalData, maxPossibleCharge, signature);
 
         if ( useSenderWhitelist ) {
-            require( senderWhitelist[relayRequest.relayData.senderAddress], "sender not whitelisted");
+            require( senderWhitelist[relayRequest.request.from], "sender not whitelisted");
         }
         if ( useTargetWhitelist ) {
-            require( targetWhitelist[relayRequest.target], "target not whitelisted");
+            require( targetWhitelist[relayRequest.request.to], "target not whitelisted");
         }
         return "";
     }

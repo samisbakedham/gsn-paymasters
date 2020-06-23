@@ -29,7 +29,7 @@ contract HashcashPaymaster is AcceptEverythingPaymaster, HashcashDifficulty {
     }
 
     function acceptRelayedCall(
-        ISignatureVerifier.RelayRequest calldata relayRequest,
+        GsnTypes.RelayRequest calldata relayRequest,
         bytes calldata signature,
         bytes calldata approvalData,
         uint256 maxPossibleCharge
@@ -40,8 +40,8 @@ contract HashcashPaymaster is AcceptEverythingPaymaster, HashcashDifficulty {
         require(approvalData.length == 64, "no hash in approvalData");
         (bytes32 hash, uint256 hashNonce) = abi.decode(approvalData, (bytes32, uint256));
         bytes32 calcHash = keccak256(abi.encode(
-            relayRequest.relayData.senderAddress,
-            relayRequest.relayData.senderNonce,
+            relayRequest.request.from,
+            relayRequest.request.nonce,
             hashNonce));
         require(hash == calcHash, "wrong hash");
         require(uint256(hash) < (uint256(1) << (256 - difficulty)), "difficulty not met");

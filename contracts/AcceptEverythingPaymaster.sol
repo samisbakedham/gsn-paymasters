@@ -2,7 +2,6 @@ pragma solidity ^0.6.2;
 pragma experimental ABIEncoderV2;
 
 import "@opengsn/gsn/contracts/BasePaymaster.sol";
-import "@opengsn/gsn/contracts/utils/GsnUtils.sol";
 
 // accept everything.
 // this paymaster accepts any request.
@@ -13,7 +12,7 @@ contract AcceptEverythingPaymaster is BasePaymaster {
     }
 
     function acceptRelayedCall(
-        ISignatureVerifier.RelayRequest calldata relayRequest,
+        GsnTypes.RelayRequest calldata relayRequest,
         bytes calldata signature,
         bytes calldata approvalData,
         uint256 maxPossibleCharge
@@ -35,9 +34,9 @@ contract AcceptEverythingPaymaster is BasePaymaster {
         bool success,
         bytes32 preRetVal,
         uint256 gasUseWithoutPost,
-        ISignatureVerifier.GasData calldata gasData
+        GsnTypes.RelayData calldata relayData
     ) external override virtual {
-        (context, success, preRetVal, gasUseWithoutPost, gasData);
+        (context, success, preRetVal, gasUseWithoutPost, relayData);
     }
 
 }

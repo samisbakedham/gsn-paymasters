@@ -29,6 +29,7 @@ contract('WhitelistPaymaster', ([from, another]) => {
 
     pm = await WhitelistPaymaster.new()
     await pm.setRelayHub(relayHubAddress)
+    await pm.setTrustedForwarder(forwarderAddress)
     await web3.eth.sendTransaction({ from, to: pm.address, value: 1e18 })
 
     console.log('pm', pm.address)

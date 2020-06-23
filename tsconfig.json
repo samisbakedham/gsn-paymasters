@@ -37,7 +37,6 @@
     "src/**/*"
  ],
   "exclude": [
-    "gsn",
     "dist",
     "node_modules",
     "build"

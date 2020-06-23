@@ -2,9 +2,6 @@ import { keccak256, toBN } from 'web3-utils'
 import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import abi from 'web3-eth-abi'
 
-import HashcashDifficulty from '../build/contracts/HashcashDifficulty.json'
-import IForwarder from '../build/contracts/IForwarder.json'
-
 /**
  * low-level hashcash calculation for the given address and nonce
  * This value should be passed as approvalData for the HashcashPaymaster
@@ -57,7 +54,7 @@ export async function calculateHashcash (senderAddress: string, senderNonce: str
 export function createHashcashAsyncApproval (difficulty: any, interval?: number, callback?: any): (relayRequest: RelayRequest) => Promise<string | null> {
   return async function (relayRequest: RelayRequest): Promise<string | null> {
     console.log('=== calculating approval')
-    const { senderAddress, senderNonce } = relayRequest.relayData
+    const { from: senderAddress, nonce: senderNonce } = relayRequest.request
     const val = calculateHashcash(senderAddress, senderNonce, difficulty, interval, callback)
     console.log('=== done calculating approval')
     return await val
@@ -87,10 +84,12 @@ function checkedCall (method: any, str: string): any {
  * @param callback
  */
 export async function calculateHashcashApproval (web3: Web3, senderAddr: string, recipientAddr: string, forwarderAddress: string, hashcashPaymasterAddr?: string, interval?: number, callback?: any): Promise<string | null> {
-  // @ts-expect-error
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const HashcashDifficulty = require('../build/contracts/HashcashDifficulty')
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const IForwarder = require('../build/contracts/IForwarder')
   const paymaster = new web3.eth.Contract(HashcashDifficulty.abi, hashcashPaymasterAddr).methods
   const difficulty = await checkedCall(paymaster.difficulty(), hashcashPaymasterAddr ?? 'undefined' + ': not A HashcashPaymaster')
-  // @ts-expect-error
   const forwarder = new web3.eth.Contract(IForwarder.abi, forwarderAddress).methods
   const nonce = await checkedCall(forwarder.getNonce(senderAddr), 'No getNonce()')
 

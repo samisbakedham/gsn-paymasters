@@ -1,10 +1,10 @@
 /* global contract artifacts before it */
 
 import { constants } from '@openzeppelin/test-helpers'
-import TypedRequestData from '@opengsn/gsn/src/common/EIP712/TypedRequestData'
-import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/src/common/EIP712/RelayRequest'
-import { defaultEnvironment } from '@opengsn/gsn/src/relayclient/types/Environments'
-import { getEip712Signature } from '@opengsn/gsn/src/common/Utils'
+import TypedRequestData, { GsnRequestType } from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
+import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
+import { defaultEnvironment } from '@opengsn/gsn/dist/src/relayclient/types/Environments'
+import { getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
 import { PrefixedHexString } from 'ethereumjs-tx'
 
 import {
@@ -17,6 +17,7 @@ import {
   TokenPaymasterInstance,
   IForwarderInstance
 } from '../types/truffle-contracts'
+import { registerAsRelayServer, revertReason } from './TestUtils'
 
 const TokenPaymaster = artifacts.require('TokenPaymaster')
 const TokenGasCalculator = artifacts.require('TokenGasCalculator')
@@ -27,15 +28,6 @@ const Forwarder = artifacts.require('Forwarder')
 const StakeManager = artifacts.require('StakeManager')
 const Penalizer = artifacts.require('Penalizer')
 const TestProxy = artifacts.require('TestProxy')
-
-async function revertReason (func: Promise<any>): Promise<string> {
-  try {
-    await func
-    return 'ok' // no revert
-  } catch (e) {
-    return e.message.replace(/.*revert /, '')
-  }
-}
 
 contract('TokenPaymaster', ([from, relay, relayOwner]) => {
   let paymaster: TokenPaymasterInstance
@@ -50,18 +42,16 @@ contract('TokenPaymaster', ([from, relay, relayOwner]) => {
   let signature: PrefixedHexString
 
   async function calculatePostGas (paymaster: TokenPaymasterInstance): Promise<void> {
-    const testpaymaster = await TokenPaymaster.new(await paymaster.uniswap(), { gas: 1e7 })
+    const uniswap = await paymaster.uniswap()
+    const testpaymaster = await TokenPaymaster.new([uniswap], { gas: 1e7 })
     const calc = await TokenGasCalculator.new(constants.ZERO_ADDRESS, constants.ZERO_ADDRESS, { gas: 10000000 })
     await testpaymaster.transferOwnership(calc.address)
     // put some tokens in paymaster so it can calculate postRelayedCall gas usage:
     await token.mint(1e18.toString())
     await token.transfer(calc.address, 1e18.toString())
-    const ret = await calc.calculatePostGas.call(testpaymaster.address)
-    // @ts-ignore (TypeChain does not know tuple components' names)
-    const { gasUsedByPostWithPreCharge, gasUsedByPostWithoutPreCharge } = ret
-    console.log('post calculator:', gasUsedByPostWithPreCharge.toString(), gasUsedByPostWithoutPreCharge.toString())
-    console.log(ret)
-    await paymaster.setPostGasUsage(gasUsedByPostWithPreCharge, gasUsedByPostWithoutPreCharge)
+    const gasUsedByPost = await calc.calculatePostGas.call(testpaymaster.address)
+    console.log('post calculator:', gasUsedByPost.toString())
+    await paymaster.setPostGasUsage(gasUsedByPost)
   }
 
   before(async () => {
@@ -75,33 +65,35 @@ contract('TokenPaymaster', ([from, relay, relayOwner]) => {
     hub = await RelayHub.new(stakeManager.address, penalizer.address)
     token = await TestToken.at(await uniswap.tokenAddress())
 
-    paymaster = await TokenPaymaster.new(uniswap.address, { gas: 1e7 })
+    paymaster = await TokenPaymaster.new([uniswap.address], { gas: 1e7 })
     await calculatePostGas(paymaster)
     await paymaster.setRelayHub(hub.address)
 
-    console.log('paymaster post with precharge=', await paymaster.gasUsedByPostWithPreCharge.toString())
-    console.log('paymaster post without precharge=', await paymaster.gasUsedByPostWithoutPreCharge.toString())
+    console.log('paymaster post with precharge=', await paymaster.gasUsedByPost.toString())
     forwarder = await Forwarder.new({ gas: 1e7 })
     recipient = await TestProxy.new(forwarder.address, { gas: 1e7 })
 
+    await forwarder.registerRequestType(GsnRequestType.typeName, GsnRequestType.typeSuffix)
+    await paymaster.setTrustedForwarder(forwarder.address)
     // approve uniswap to take our tokens.
     await token.approve(uniswap.address, -1)
 
     relayRequest = {
-      target: recipient.address,
-      encodedFunction: recipient.contract.methods.test().encodeABI(),
       relayData: {
-        senderAddress: from,
-        senderNonce: '0',
         relayWorker: relay,
         paymaster: paymaster.address,
-        forwarder: forwarder.address
-      },
-      gasData: {
+        forwarder: forwarder.address,
         pctRelayFee: '1',
         baseRelayFee: '0',
-        gasPrice: await web3.eth.getGasPrice(),
-        gasLimit: 1e6.toString()
+        gasPrice: await web3.eth.getGasPrice()
+      },
+      request: {
+        data: recipient.contract.methods.test().encodeABI(),
+        nonce: '0',
+        value: '0',
+        from,
+        to: recipient.address,
+        gas: 1e6.toString()
       }
     }
 
@@ -117,8 +109,8 @@ contract('TokenPaymaster', ([from, relay, relayOwner]) => {
     )
   })
 
-  context('#acceptRelayedCall', function () {
-    it('should fail if incorrect signature', async () => {
+  context('#acceptRelayedCall()', function () {
+    it('should reject if incorrect signature', async () => {
       const wrongSignature = await getEip712Signature(
         web3,
         new TypedRequestData(
@@ -130,55 +122,52 @@ contract('TokenPaymaster', ([from, relay, relayOwner]) => {
       assert.equal(await revertReason(paymaster.acceptRelayedCall(relayRequest, wrongSignature, '0x', 1e6)), 'signature mismatch')
     })
 
-    it('should fail if not enough balance', async () => {
+    it('should reject if not enough balance', async () => {
       assert.equal(await revertReason(paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)), 'balance too low')
     })
 
-    // not a test!
-    it('should fund recipient', async () => {
-      await token.mint(5e18.toString())
-      await token.transfer(recipient.address, 5e18.toString())
-    })
+    context('with funded recipient', function () {
+      before(async function () {
+        await token.mint(5e18.toString())
+        await token.transfer(recipient.address, 5e18.toString())
+      })
 
-    it('should fail if no approval', async () => {
-      assert.include(await revertReason(paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)), 'allowance too low')
-    })
+      it('should reject if no token approval', async () => {
+        assert.include(await revertReason(paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)), 'allowance too low')
+      })
 
-    // not a test!
-    it('should recipient.approve', async () => {
-      await recipient.execute(token.address, token.contract.methods.approve(paymaster.address, -1).encodeABI())
-    })
+      context('with token approved for paymaster', function () {
+        before(async function () {
+          await recipient.execute(token.address, token.contract.methods.approve(paymaster.address, -1).encodeABI())
+        })
 
-    it('should succeed acceptRelayedCall', async () => {
-      await paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)
+        it('should succeed acceptRelayedCall', async () => {
+          await paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)
+        })
+      })
     })
   })
 
-  context('#relayedCall', () => {
+  context('#relayedCall()', function () {
     const paymasterDeposit = 1e18.toString()
 
     before(async () => {
-      await stakeManager.stakeForAddress(relay, 7 * 24 * 3600, {
-        from: relayOwner,
-        value: (2e18).toString()
-      })
-      await stakeManager.authorizeHub(relay, hub.address, { from: relayOwner })
-      await hub.addRelayWorkers([relay], { from: relay })
-      await hub.registerRelayServer(2e16.toString(), '10', 'url', { from: relay })
+      // TODO: not needed. use startGsn instead
+      await registerAsRelayServer(stakeManager, relay, relayOwner, hub)
       await hub.depositFor(paymaster.address, { value: paymasterDeposit })
     })
 
-    it('pay with token to make a call', async () => {
+    it('should pay with token to make a call', async function () {
       const preTokens = await token.balanceOf(recipient.address)
       const prePaymasterTokens = await token.balanceOf(paymaster.address)
       // for simpler calculations: we don't take any fee, and gas price is '1', so actual charge
       // should be exactly gas usage. token is 2:1 to eth, so we expect to pay exactly twice the "charge"
       const _relayRequest = cloneRelayRequest(relayRequest)
-      _relayRequest.relayData.senderAddress = from
-      _relayRequest.relayData.senderNonce = (await forwarder.getNonce(from)).toString()
-      _relayRequest.gasData.gasPrice = '1'
-      _relayRequest.gasData.pctRelayFee = '0'
-      _relayRequest.gasData.baseRelayFee = '0'
+      _relayRequest.request.from = from
+      _relayRequest.request.nonce = (await forwarder.getNonce(from)).toString()
+      _relayRequest.relayData.gasPrice = '1'
+      _relayRequest.relayData.pctRelayFee = '0'
+      _relayRequest.relayData.baseRelayFee = '0'
 
       const chainId = defaultEnvironment.chainId
       const dataToSign = new TypedRequestData(
