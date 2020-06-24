@@ -1,0 +1,17 @@
+#!/bin/bash -e
+
+rm -rf ./dist/
+yarn truffle-compile
+yarn generate
+
+mkdir -p src/compiled/
+
+CONTRACTS="ProxyIdentity"
+BUILDFOLDER=./build/contracts
+OUTFOLDER=./src/compiled/
+for c in $CONTRACTS; do
+  echo copy $OUTFOLDER/$c.json
+  cp $BUILDFOLDER/$c.json $OUTFOLDER
+done
+
+tsc

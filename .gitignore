@@ -8,3 +8,4 @@ dist/
 /.idea/*
 !/.idea/dictionaries/
 .DS_Store
+/src/compiled/
