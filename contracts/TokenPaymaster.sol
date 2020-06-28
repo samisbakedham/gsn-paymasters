@@ -57,7 +57,7 @@ contract TokenPaymaster is BasePaymaster {
 
     // return the payer of this request.
     // for account-based target, this is the target account.
-    function getPayer(GsnTypes.RelayRequest calldata relayRequest) external virtual view returns (address) {
+    function getPayer(GsnTypes.RelayRequest calldata relayRequest) public virtual view returns (address) {
         return relayRequest.request.to;
     }
 

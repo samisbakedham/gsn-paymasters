@@ -44,7 +44,7 @@ contract TokenGasCalculator is RelayHub {
 
         paymaster.setRelayHub(IRelayHub(address(this)));
 
-        GsnTypes.RelayData memory relayData = GsnTypes.RelayData(1, 0, 0, address(0), address(0), address(0));
+        GsnTypes.RelayData memory relayData = GsnTypes.RelayData(1, 0, 0, address(0), address(0), "", 0, address(0));
         bytes memory ctx1 = abi.encode(this, uint(500));
         //with precharge
         uint gas0 = gasleft();

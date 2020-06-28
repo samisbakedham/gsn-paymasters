@@ -87,6 +87,8 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       relayData: {
         ...gasData,
         relayWorker,
+        paymasterData: '0x',
+        clientId: '0',
         paymaster: paymaster.address,
         forwarder: forwarder.address
       }
@@ -278,6 +280,8 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
         relayData: {
           ...gasData,
           relayWorker,
+          paymasterData: '0x',
+          clientId: '0',
           paymaster: paymaster.address,
           forwarder: testEnv.deploymentResult.forwarderAddress
         }

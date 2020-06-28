@@ -30,7 +30,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
         return abi.encode(payer, relayRequest.request.from, tokenPreCharge);
     }
 
-    function getPayer(GsnTypes.RelayRequest calldata relayRequest) external override virtual view returns (address) {
+    function getPayer(GsnTypes.RelayRequest calldata relayRequest) public override virtual view returns (address) {
         // TODO: if (rr.paymasterData != '') return address(rr.paymasterData)
         //  this is to support pre-existing proxies/proxies with changed owner
         return proxyFactory.calculateAddress(relayRequest.request.from);

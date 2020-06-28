@@ -83,6 +83,8 @@ contract('TokenPaymaster', ([from, relay, relayOwner]) => {
         relayWorker: relay,
         paymaster: paymaster.address,
         forwarder: forwarder.address,
+        paymasterData: '0x',
+        clientId: '0',
         pctRelayFee: '1',
         baseRelayFee: '0',
         gasPrice: await web3.eth.getGasPrice()

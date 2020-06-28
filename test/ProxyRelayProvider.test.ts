@@ -61,14 +61,6 @@ contract('ProxyRelayProvider', function (accounts) {
     )
   })
 
-  context('#_calculateProxyAddress()', function () {
-    it('should calculate proxy address correctly', async function () {
-      const proxyAddressOnChainCalculation = await proxyFactory.calculateAddress(accounts[0])
-      const proxyAddressOffChainCalculation = proxyRelayProvider._calculateProxyAddress(accounts[0], 0)
-      assert.strictEqual(proxyAddressOnChainCalculation.toLowerCase(), proxyAddressOffChainCalculation.toLowerCase())
-    })
-  })
-
   context('#_ethSendTransaction()', function () {
     let counter: TestCounterInstance
     let gaslessAccount: AccountKeypair
@@ -79,7 +71,7 @@ contract('ProxyRelayProvider', function (accounts) {
       // @ts-ignore
       TestCounter.web3.setProvider(proxyRelayProvider)
       gaslessAccount = proxyRelayProvider.newAccount()
-      proxyAddress = web3.utils.toChecksumAddress(proxyRelayProvider._calculateProxyAddress(gaslessAccount.address, 0))
+      proxyAddress = await proxyRelayProvider.calculateProxyAddress(gaslessAccount.address)
 
       await token.mint(1e18.toString())
       await token.transfer(proxyAddress, 1e18.toString())

@@ -14,7 +14,7 @@ export async function registerAsRelayServer (stakeManager: StakeManagerInstance,
     from: relayOwner,
     value: (2e18).toString()
   })
-  await stakeManager.authorizeHub(relay, hub.address, { from: relayOwner })
+  await stakeManager.authorizeHubByOwner(relay, hub.address, { from: relayOwner })
   await hub.addRelayWorkers([relay], { from: relay })
   await hub.registerRelayServer(2e16.toString(), '10', 'url', { from: relay })
 }
