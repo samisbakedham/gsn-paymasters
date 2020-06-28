@@ -34,7 +34,8 @@ contract TokenGasCalculator is RelayHub {
      */
     function calculatePostGas(TokenPaymaster paymaster) public returns (uint gasUsedByPost) {
         address paymasterAddress = address(paymaster);
-        IERC20 token = paymaster.token();
+        IERC20 token = paymaster.tokens(0);
+        IUniswap uniswap = paymaster.uniswaps(0);
         require(token.balanceOf(address(this)) >= 1000, "must move some tokens to calculator first");
         require(paymaster.owner() == address(this), "must set calculator as owner of paymaster");
         token.approve(paymasterAddress, uint(-1));
@@ -45,7 +46,8 @@ contract TokenGasCalculator is RelayHub {
         paymaster.setRelayHub(IRelayHub(address(this)));
 
         GsnTypes.RelayData memory relayData = GsnTypes.RelayData(1, 0, 0, address(0), address(0), "", 0, address(0));
-        bytes memory ctx1 = abi.encode(this, uint(500));
+
+        bytes memory ctx1 = abi.encode(this, uint(500),token,uniswap);
         //with precharge
         uint gas0 = gasleft();
         paymaster.postRelayedCall(ctx1, true, bytes32(0), 100, relayData);

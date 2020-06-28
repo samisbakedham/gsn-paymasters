@@ -88,7 +88,8 @@ contract ProxyIdentity is IERC725, BaseRelayRecipient, Initializable {
 
     function executeCreate(bytes memory)
         internal
-        returns (address newContract)
+        pure
+        returns (address /*newContract*/)
     {
         revert("not supported");
     /*

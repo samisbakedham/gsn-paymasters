@@ -1,3 +1,4 @@
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.6.2;
 pragma experimental ABIEncoderV2;
 
@@ -24,10 +25,12 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
     ) external override virtual view
     returns (bytes memory) {
         GsnEip712Library.verifySignature(relayRequest, signature);
-        (address payer, uint256 tokenPreCharge) = _calculatePreCharge(relayRequest, maxPossibleGas);
+        (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);
+        (address payer, uint256 tokenPreCharge) = _calculatePreCharge(token, uniswap, relayRequest, maxPossibleGas);
+
         bool isApproved = tokenPreCharge < token.allowance(payer, address(this));
         require(isApproved || !payer.isContract(), "identity deployed but allowance too low");
-        return abi.encode(payer, relayRequest.request.from, tokenPreCharge);
+        return abi.encode(payer, relayRequest.request.from, tokenPreCharge, token, uniswap);
     }
 
     function getPayer(GsnTypes.RelayRequest calldata relayRequest) public override virtual view returns (address) {
@@ -38,7 +41,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
 
     function preRelayedCall(bytes calldata context) external override virtual
     returns (bytes32) {
-        (address payer, address owner, uint256 tokenPrecharge) = abi.decode(context, (address, address, uint256));
+        (address payer, address owner, uint256 tokenPrecharge, IERC20 token) = abi.decode(context, (address, address, uint256, IERC20));
         if (!payer.isContract()) {
             deployProxy(owner);
         }
@@ -58,8 +61,8 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
         uint256 gasUseWithoutPost,
         GsnTypes.RelayData calldata relayData
     ) external override virtual {
-        (address payer,, uint tokenPrecharge) = abi.decode(context, (address, address, uint));
-        _postRelayedCallInternal(payer, tokenPrecharge, gasUseWithoutPost, relayData);
+        (address payer,, uint tokenPrecharge, IERC20 token, IUniswap uniswap) = abi.decode(context, (address, address, uint, IERC20, IUniswap));
+        _postRelayedCallInternal(payer, tokenPrecharge, gasUseWithoutPost, relayData, token, uniswap);
     }
 
     // TODO: calculate precise values for these params

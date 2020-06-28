@@ -3,6 +3,7 @@ import { AccountKeypair } from '@opengsn/gsn/src/relayclient/AccountManager'
 import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
 import { expectEvent } from '@openzeppelin/test-helpers'
 import { HttpProvider } from 'web3-core'
+import abi from 'web3-eth-abi'
 
 import {
   ProxyDeployingPaymasterInstance,
@@ -40,7 +41,7 @@ contract('ProxyRelayProvider', function (accounts) {
         stakeManagerAddress,
         forwarderAddress
       }
-      // @ts-ignore
+      // @ts-expect-error
     } = await GsnTestEnvironment.startGsn('localhost', false)
     const hub = await RelayHub.at(relayHubAddress)
     await paymaster.setRelayHub(hub.address)
@@ -57,7 +58,12 @@ contract('ProxyRelayProvider', function (accounts) {
     proxyRelayProvider = new ProxyRelayProvider(
       proxyFactory.address,
       web3.currentProvider as HttpProvider,
-      gsnConfig
+      gsnConfig, {
+        asyncPaymasterData: async () => {
+          // @ts-ignore
+          return abi.encodeParameters(['address'], [uniswap.address])
+        }
+      }
     )
   })
 
@@ -68,7 +74,7 @@ contract('ProxyRelayProvider', function (accounts) {
 
     before(async function () {
       counter = await TestCounter.new()
-      // @ts-ignore
+      // @ts-expect-error
       TestCounter.web3.setProvider(proxyRelayProvider)
       gaslessAccount = proxyRelayProvider.newAccount()
       proxyAddress = await proxyRelayProvider.calculateProxyAddress(gaslessAccount.address)

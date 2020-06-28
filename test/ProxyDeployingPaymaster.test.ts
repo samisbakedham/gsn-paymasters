@@ -1,3 +1,4 @@
+import 'source-map-support/register'
 import { RelayProvider } from '@opengsn/gsn'
 import { getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
 import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
@@ -87,9 +88,9 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       relayData: {
         ...gasData,
         relayWorker,
-        paymasterData: '0x',
-        clientId: '0',
         paymaster: paymaster.address,
+        paymasterData: '0x',
+        clientId: '2',
         forwarder: forwarder.address
       }
     }
@@ -173,7 +174,9 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       await token.mint(1e18.toString())
       await token.transfer(proxyAddress, 1e18.toString())
       await paymaster.setRelayHub(senderAddress)
-      context = web3.eth.abi.encodeParameters(['address', 'address', 'uint256'], [proxyAddress, senderAddress, preCharge])
+      context = web3.eth.abi.encodeParameters(
+        ['address', 'address', 'uint256', 'address', 'address'],
+        [proxyAddress, senderAddress, preCharge, token.address, uniswap.address])
     })
 
     after(async function () {
@@ -216,7 +219,9 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       await token.transfer(paymaster.address, 1e18.toString())
       await paymaster.setRelayHub(testHub.address)
       await paymaster.setPostGasUsage(gasUsedByPost)
-      context = web3.eth.abi.encodeParameters(['address', 'address', 'uint256'], [proxyAddress, senderAddress, preCharge])
+      context = web3.eth.abi.encodeParameters(
+        ['address', 'address', 'uint256', 'address', 'address'],
+        [proxyAddress, senderAddress, preCharge, token.address, uniswap.address])
     })
 
     it('should refund the proxy with the overcharged tokens', async function () {
@@ -280,9 +285,9 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
         relayData: {
           ...gasData,
           relayWorker,
-          paymasterData: '0x',
-          clientId: '0',
           paymaster: paymaster.address,
+          paymasterData: '0x',
+          clientId: '2',
           forwarder: testEnv.deploymentResult.forwarderAddress
         }
       }
@@ -300,7 +305,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
         stakeManagerAddress: testEnv.deploymentResult.stakeManagerAddress,
         paymasterAddress: paymaster.address
       }
-      // @ts-ignore
+      // @ts-expect-error
       const relayProvider = new RelayProvider(web3.currentProvider, gsnConfig)
       proxy.setProvider(relayProvider)
     })

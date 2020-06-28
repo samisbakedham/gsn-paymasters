@@ -1,8 +1,7 @@
-// require('ts-node/register')
+require('ts-node/register/transpile-only')
 
 const HDWalletProvider = require('@truffle/hdwallet-provider')
 const infuraKey = 'c3422181d0594697a38defe7706a1e5b'
-require('ts-node/register')
 
 const fs = require('fs')
 const mnemonic = () => fs.readFileSync('.secret').toString().trim()
@@ -45,7 +44,7 @@ module.exports = {
       version: '0.6.9', // Fetch exact version from solc-bin (default: truffle's version)
       settings: { // See the solidity docs for advice about optimization and evmVersion
         optimizer: {
-          enabled: false,
+          enabled: true,
           runs: 200
         },
         evmVersion: 'istanbul'

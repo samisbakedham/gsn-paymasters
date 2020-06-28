@@ -41,8 +41,11 @@
     "web3": "1.2.7"
   },
   "scripts": {
+    "solc": "fastsolc #!NOGIT",
+    "bdl" : "bdl test test/TokenPaymaster.test.ts",
     "generate": "rm -rf ./build/contracts && npx truffle compile && typechain --target trufflehotfix './build/contracts/**/*.json'",
     "test": "yarn tmp:prepare && yarn lint && run-with-testrpc --hardfork 'istanbul' --gasLimit 100000000 'yarn truffle-test'",
+    "runtest": "run-with-testrpc --hardfork 'istanbul' --gasLimit 100000000 'truffle test'",
     "tsc": "tsc --noEmit",
     "postinstall": "patch-package",
     "tmp:prepare": "./scripts/prepublish",

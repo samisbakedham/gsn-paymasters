@@ -1,3 +1,4 @@
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.6.9;
 
 contract TestCounter {
@@ -15,5 +16,7 @@ contract TestCounter {
         return count;
     }
 
+    /* solhint-disable no-empty-blocks */
+    receive() external payable {}
     fallback() external payable {}
 }

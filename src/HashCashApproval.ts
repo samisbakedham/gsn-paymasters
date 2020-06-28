@@ -17,7 +17,7 @@ export async function calculateHashcash (senderAddress: string, senderNonce: str
   let hashNonce = 0
   let intervalCount = 0
   while (true) {
-    // @ts-ignore
+    // @ts-expect-error
     const params = abi.encodeParameters(['address', 'uint256', 'uint256'],
       [senderAddress, senderNonce, hashNonce])
     const hash = keccak256(params)
@@ -26,7 +26,7 @@ export async function calculateHashcash (senderAddress: string, senderNonce: str
       if (callback != null) {
         await callback(difficulty) // signal "done"
       }
-      // @ts-ignore
+      // @ts-expect-error
       return abi.encodeParameters(['bytes32', 'uint256'],
         [hash, hashNonce])
     }

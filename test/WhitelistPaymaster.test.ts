@@ -19,7 +19,7 @@ contract('WhitelistPaymaster', ([from, another]) => {
         stakeManagerAddress,
         forwarderAddress
       }
-      // @ts-ignore
+      // @ts-expect-error
     } = await GsnTestEnvironment.startGsn('localhost')
 
     s = await SampleRecipient.new()
@@ -41,9 +41,9 @@ contract('WhitelistPaymaster', ([from, another]) => {
       stakeManagerAddress,
       paymasterAddress: pm.address
     }
-    // @ts-ignore
+    // @ts-expect-error
     const p = new RelayProvider(web3.currentProvider, gsnConfig)
-    // @ts-ignore
+    // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
   })
 
