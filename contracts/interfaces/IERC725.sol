@@ -14,5 +14,5 @@ interface IERC725 {
 
     function setData(bytes32 _key, bytes calldata _value) external;
 
-    function execute(uint256 _operationType, address _to, uint256 _value, bytes calldata _data) external;
+    function execute(uint256 _operationType, address _to, uint256 _value, bytes calldata _data) external payable;
 }

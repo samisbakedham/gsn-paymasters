@@ -32,7 +32,8 @@ export default class ProxyRelayProvider extends RelayProvider {
     this.calculateProxyAddress(gsnTransactionDetails.from).then(proxyAddress => {
       // @ts-expect-error
       const proxy = new Contract(ProxyIdentityArtifact.abi, proxyAddress)
-      payload.params[0].data = proxy.methods.execute(0, gsnTransactionDetails.to, 0, gsnTransactionDetails.data).encodeABI()
+      const value = gsnTransactionDetails.value ?? '0'
+      payload.params[0].data = proxy.methods.execute(0, gsnTransactionDetails.to, value, gsnTransactionDetails.data).encodeABI()
       payload.params[0].to = proxyAddress
       super._ethSendTransaction(payload, callback)
     })

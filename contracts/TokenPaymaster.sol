@@ -116,6 +116,7 @@ contract TokenPaymaster is BasePaymaster {
     returns (address payer, uint256 tokenPreCharge) {
         payer = this.getPayer(relayRequest);
         uint ethMaxCharge = relayHub.calculateCharge(maxPossibleGas, relayRequest.relayData);
+        ethMaxCharge += relayRequest.request.value;
         tokenPreCharge = uniswap.getTokenToEthOutputPrice(ethMaxCharge);
         require(tokenPreCharge <= token.balanceOf(payer), "balance too low");
     }
@@ -143,19 +144,20 @@ contract TokenPaymaster is BasePaymaster {
     virtual
     relayHubOnly {
         (address payer, uint256 tokenPrecharge, IERC20 token, IUniswap uniswap) = abi.decode(context, (address, uint256, IERC20, IUniswap));
-        _postRelayedCallInternal(payer, tokenPrecharge, gasUseWithoutPost, relayData, token, uniswap);
+        _postRelayedCallInternal(payer, tokenPrecharge, 0, gasUseWithoutPost, relayData, token, uniswap);
     }
 
     function _postRelayedCallInternal(
         address payer,
         uint256 tokenPrecharge,
+        uint256 valueRequested,
         uint256 gasUseWithoutPost,
         GsnTypes.RelayData calldata relayData,
         IERC20 token,
         IUniswap uniswap
     ) internal {
         uint256 ethActualCharge = relayHub.calculateCharge(gasUseWithoutPost.add(gasUsedByPost), relayData);
-        uint256 tokenActualCharge = uniswap.getTokenToEthOutputPrice(ethActualCharge);
+        uint256 tokenActualCharge = uniswap.getTokenToEthOutputPrice(valueRequested.add(ethActualCharge));
         uint256 tokenRefund = tokenPrecharge.sub(tokenActualCharge);
         _refundPayer(payer, token, tokenRefund);
         _depositProceedsToHub(ethActualCharge, uniswap);

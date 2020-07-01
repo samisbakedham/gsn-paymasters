@@ -30,7 +30,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
 
         bool isApproved = tokenPreCharge < token.allowance(payer, address(this));
         require(isApproved || !payer.isContract(), "identity deployed but allowance too low");
-        return abi.encode(payer, relayRequest.request.from, tokenPreCharge, token, uniswap);
+        return abi.encode(payer, relayRequest.request.from, tokenPreCharge, relayRequest.request.value, relayRequest.relayData.forwarder, token, uniswap);
     }
 
     function getPayer(GsnTypes.RelayRequest calldata relayRequest) public override virtual view returns (address) {
@@ -41,11 +41,18 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
 
     function preRelayedCall(bytes calldata context) external override virtual
     returns (bytes32) {
-        (address payer, address owner, uint256 tokenPrecharge, IERC20 token) = abi.decode(context, (address, address, uint256, IERC20));
+        (
+            address payer, address owner, uint256 tokenPrecharge,
+            uint256 valueRequested, address payable destination,
+            IERC20 token, IUniswap uniswap
+        ) = abi.decode(context, (address, address, uint256, uint256, address, IERC20, IUniswap));
         if (!payer.isContract()) {
             deployProxy(owner);
         }
         token.transferFrom(payer, address(this), tokenPrecharge);
+        //solhint-disable-next-line
+        uniswap.tokenToEthSwapOutput(valueRequested, uint256(-1), block.timestamp+60*15);
+        destination.transfer(valueRequested);
         return 0;
     }
 
@@ -61,8 +68,8 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
         uint256 gasUseWithoutPost,
         GsnTypes.RelayData calldata relayData
     ) external override virtual {
-        (address payer,, uint tokenPrecharge, IERC20 token, IUniswap uniswap) = abi.decode(context, (address, address, uint, IERC20, IUniswap));
-        _postRelayedCallInternal(payer, tokenPrecharge, gasUseWithoutPost, relayData, token, uniswap);
+        (address payer,, uint256 tokenPrecharge, uint256 valueRequested,,IERC20 token, IUniswap uniswap) = abi.decode(context, (address, address, uint256, uint256, address, IERC20, IUniswap));
+        _postRelayedCallInternal(payer, tokenPrecharge, valueRequested, gasUseWithoutPost, relayData, token, uniswap);
     }
 
     // TODO: calculate precise values for these params

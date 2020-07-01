@@ -3,7 +3,7 @@ import { RelayProvider } from '@opengsn/gsn'
 import { getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
 import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
 import TypedRequestData, { GsnRequestType } from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
-import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
+import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import { defaultEnvironment } from '@opengsn/gsn/dist/src/relayclient/types/Environments'
 import { snapshot, revert } from '@opengsn/gsn/dist/test/TestUtils'
 import GsnTestEnvironment from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
@@ -128,6 +128,20 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
         await token.transfer(proxyAddress, 1e18.toString())
       })
 
+      it('should reject if not enough balance for value transfer', async () => {
+        const relayRequestX = cloneRelayRequest(relayRequest)
+        relayRequestX.request.value = 1e18.toString()
+        const signatureX = await getEip712Signature(
+          web3,
+          new TypedRequestData(
+            defaultEnvironment.chainId,
+            forwarder.address,
+            relayRequestX
+          )
+        )
+        assert.equal(await revertReason(paymaster.acceptRelayedCall(relayRequestX, signatureX, '0x', 1e6)), 'balance too low')
+      })
+
       it('should accept if payer is an identity that was not deployed yet', async function () {
         await paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)
       })
@@ -175,8 +189,8 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       await token.transfer(proxyAddress, 1e18.toString())
       await paymaster.setRelayHub(senderAddress)
       context = web3.eth.abi.encodeParameters(
-        ['address', 'address', 'uint256', 'address', 'address'],
-        [proxyAddress, senderAddress, preCharge, token.address, uniswap.address])
+        ['address', 'address', 'uint256', 'uint256', 'address', 'address', 'address'],
+        [proxyAddress, senderAddress, preCharge, 0, constants.ZERO_ADDRESS, token.address, uniswap.address])
     })
 
     after(async function () {
@@ -220,8 +234,8 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       await paymaster.setRelayHub(testHub.address)
       await paymaster.setPostGasUsage(gasUsedByPost)
       context = web3.eth.abi.encodeParameters(
-        ['address', 'address', 'uint256', 'address', 'address'],
-        [proxyAddress, senderAddress, preCharge, token.address, uniswap.address])
+        ['address', 'address', 'uint256', 'uint256', 'address', 'address', 'address'],
+        [proxyAddress, senderAddress, preCharge, 0, constants.ZERO_ADDRESS, token.address, uniswap.address])
     })
 
     it('should refund the proxy with the overcharged tokens', async function () {
@@ -257,6 +271,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
     let paymaster: ProxyDeployingPaymasterInstance
     let counter: TestCounterInstance
     let proxy: any
+    let encodedCall: string
 
     before(async function () {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -305,6 +320,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
         stakeManagerAddress: testEnv.deploymentResult.stakeManagerAddress,
         paymasterAddress: paymaster.address
       }
+      encodedCall = counter.contract.methods.increment().encodeABI()
       // @ts-expect-error
       const relayProvider = new RelayProvider(web3.currentProvider, gsnConfig)
       proxy.setProvider(relayProvider)
@@ -316,7 +332,6 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       assert.equal(counter1.toString(), '0')
 
       // Call counter.increment from identity
-      const encodedCall = counter.contract.methods.increment().encodeABI()
       const tx = await proxy.methods.execute(0, counter.address, 0, encodedCall).send({
         from: senderAddress,
         gas: 5000000
@@ -329,21 +344,38 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
     })
 
     it('should pay with token to make a call if proxy is deployed', async function () {
-      // Counter should be 1 initially
       const counter1 = await counter.get()
       assert.equal(counter1.toString(), '1')
 
-      // Call counter.increment from identity
-      const encodedCall = counter.contract.methods.increment().encodeABI()
       const tx = await proxy.methods.execute(0, counter.address, 0, encodedCall).send({
         from: senderAddress,
         gas: 5000000
       })
 
-      // Check that increment was called
       const counter2 = await counter.get()
       assert.equal(counter2.toString(), '2')
       await expectEvent.not.inTransaction(tx.transactionHash, ProxyFactory, 'ProxyDeployed', { proxyAddress })
+    })
+
+    it('should convert tokens to ETH and send to Proxy if \'value\' is specified', async function () {
+      const counter1 = await counter.get()
+      assert.strictEqual(counter1.toString(), '2')
+
+      const balance1 = await web3.eth.getBalance(counter.address)
+      assert.strictEqual(balance1, '0')
+
+      const value = 1e16
+      await proxy.methods.execute(0, counter.address, value.toString(), encodedCall).send({
+        from: senderAddress,
+        gas: 5000000,
+        value
+      })
+
+      const counter2 = await counter.get()
+      assert.strictEqual(counter2.toString(), '3')
+
+      const balance2 = await web3.eth.getBalance(counter.address)
+      assert.strictEqual(balance2, value.toString(), 'counter did not receive money')
     })
   })
 })

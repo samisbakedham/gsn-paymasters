@@ -65,6 +65,7 @@ contract ProxyIdentity is IERC725, BaseRelayRecipient, Initializable {
 
     function execute(uint256 _operationType, address _to, uint256 _value, bytes calldata _data)
         external
+        payable
         override
         onlyOwner
     {
