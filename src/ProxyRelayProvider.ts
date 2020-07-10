@@ -1,5 +1,5 @@
 import GsnTransactionDetails from '@opengsn/gsn/dist/src/relayclient/types/GsnTransactionDetails'
-import RelayClient from '@opengsn/gsn/dist/src/relayclient/RelayClient'
+import { RelayClient } from '@opengsn/gsn/dist/src/relayclient/RelayClient'
 import { JsonRpcCallback, RelayProvider } from '@opengsn/gsn/dist/src/relayclient/RelayProvider'
 import { GSNConfig, GSNDependencies } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
 import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'

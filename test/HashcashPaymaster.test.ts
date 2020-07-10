@@ -5,7 +5,7 @@ import { HashcashPaymasterInstance, SampleRecipientInstance } from '../types/tru
 import { GSNConfig, RelayProvider } from '@opengsn/gsn'
 import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 
-import GsnTestEnvironment from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
+import { GsnTestEnvironment } from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
 import { expectRevert } from '@openzeppelin/test-helpers'
 
 const HashcashPaymaster = artifacts.require('HashcashPaymaster')

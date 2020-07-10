@@ -1,7 +1,7 @@
 import { SampleRecipientInstance, WhitelistPaymasterInstance } from '../types/truffle-contracts'
 
 import { RelayProvider } from '@opengsn/gsn'
-import GsnTestEnvironment from '@opengsn/gsn/dist/GsnTestEnvironment'
+import { GsnTestEnvironment } from '@opengsn/gsn/dist/GsnTestEnvironment'
 import { expectRevert } from '@openzeppelin/test-helpers'
 
 const WhitelistPaymaster = artifacts.require('WhitelistPaymaster')
@@ -19,7 +19,6 @@ contract('WhitelistPaymaster', ([from, another]) => {
         stakeManagerAddress,
         forwarderAddress
       }
-      // @ts-expect-error
     } = await GsnTestEnvironment.startGsn('localhost')
 
     s = await SampleRecipient.new()

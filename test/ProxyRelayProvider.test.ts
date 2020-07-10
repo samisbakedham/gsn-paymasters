@@ -1,4 +1,4 @@
-import GsnTestEnvironment from '@opengsn/gsn/dist/GsnTestEnvironment'
+import { GsnTestEnvironment } from '@opengsn/gsn/dist/GsnTestEnvironment'
 import { AccountKeypair } from '@opengsn/gsn/src/relayclient/AccountManager'
 import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
 import { expectEvent } from '@openzeppelin/test-helpers'
@@ -41,7 +41,6 @@ contract('ProxyRelayProvider', function (accounts) {
         stakeManagerAddress,
         forwarderAddress
       }
-      // @ts-expect-error
     } = await GsnTestEnvironment.startGsn('localhost', false)
     const hub = await RelayHub.at(relayHubAddress)
     await paymaster.setRelayHub(hub.address)

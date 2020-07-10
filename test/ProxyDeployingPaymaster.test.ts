@@ -6,7 +6,7 @@ import TypedRequestData, { GsnRequestType } from '@opengsn/gsn/dist/src/common/E
 import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import { defaultEnvironment } from '@opengsn/gsn/dist/src/relayclient/types/Environments'
 import { snapshot, revert } from '@opengsn/gsn/dist/test/TestUtils'
-import GsnTestEnvironment from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
+import { GsnTestEnvironment } from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
 
 import { constants, expectEvent } from '@openzeppelin/test-helpers'
 import { PrefixedHexString } from 'ethereumjs-tx'
