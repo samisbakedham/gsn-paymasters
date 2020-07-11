@@ -18,7 +18,7 @@ import {
   IForwarderInstance
 } from '../types/truffle-contracts'
 import { registerAsRelayServer, revertReason } from './TestUtils'
-import RelayData from '@opengsn/gsn/src/common/EIP712/RelayData'
+import RelayData from '@opengsn/gsn/dist/src/common/EIP712/RelayData'
 
 const TokenPaymaster = artifacts.require('TokenPaymaster')
 const TokenGasCalculator = artifacts.require('TokenGasCalculator')

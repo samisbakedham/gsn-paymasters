@@ -1,5 +1,5 @@
 import { GsnTestEnvironment } from '@opengsn/gsn/dist/GsnTestEnvironment'
-import { AccountKeypair } from '@opengsn/gsn/src/relayclient/AccountManager'
+import { AccountKeypair } from '@opengsn/gsn/dist/src/relayclient/AccountManager'
 import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
 import { expectEvent } from '@openzeppelin/test-helpers'
 import { HttpProvider } from 'web3-core'
