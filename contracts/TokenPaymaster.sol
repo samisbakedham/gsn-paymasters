@@ -78,13 +78,11 @@ contract TokenPaymaster is BasePaymaster {
         bytes calldata approvalData,
         uint256 maxPossibleGas
     )
-    external
-    override
+    public
     virtual
     view
     returns (bytes memory context) {
         (approvalData);
-        _verifySignature(relayRequest, signature);
 
         (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);
 
@@ -121,21 +119,26 @@ contract TokenPaymaster is BasePaymaster {
         require(tokenPreCharge <= token.balanceOf(payer), "balance too low");
     }
 
-    function preRelayedCall(bytes calldata context)
+    function preRelayedCall(
+        GsnTypes.RelayRequest calldata relayRequest,
+        bytes calldata signature,
+        bytes calldata approvalData,
+        uint256 maxPossibleGas
+    )
     external
     override
     virtual
     relayHubOnly
-    returns (bytes32) {
+    returns (bytes memory context, bool revertOnRecipientRevert) {
+        context = acceptRelayedCall(relayRequest, signature, approvalData, maxPossibleGas);
         (address payer, uint tokenPrecharge, IERC20 token) = abi.decode(context, (address, uint, IERC20));
         token.transferFrom(payer, address(this), tokenPrecharge);
-        return bytes32(0);
+        return (context, false);
     }
 
     function postRelayedCall(
         bytes calldata context,
         bool,
-        bytes32,
         uint256 gasUseWithoutPost,
         GsnTypes.RelayData calldata relayData
     )
@@ -179,23 +182,4 @@ contract TokenPaymaster is BasePaymaster {
     }
 
     event TokensCharged(uint gasUseWithoutPost, uint gasJustPost, uint ethActualCharge, uint tokenActualCharge);
-
-    uint256 constant private ACCEPT_RELAYED_CALL_GAS_LIMIT = 120000;
-    uint256 constant private PRE_RELAYED_CALL_GAS_LIMIT = 100000;
-    uint256 constant private POST_RELAYED_CALL_GAS_LIMIT = 110000;
-
-    function getGasLimits()
-    external
-    override
-    virtual
-    view
-    returns (
-        IPaymaster.GasLimits memory limits
-    ) {
-        return IPaymaster.GasLimits(
-            ACCEPT_RELAYED_CALL_GAS_LIMIT,
-            PRE_RELAYED_CALL_GAS_LIMIT,
-            POST_RELAYED_CALL_GAS_LIMIT
-        );
-    }
 }

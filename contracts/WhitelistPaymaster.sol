@@ -23,14 +23,17 @@ contract WhitelistPaymaster is AcceptEverythingPaymaster {
         useTargetWhitelist = true;
     }
 
-    function acceptRelayedCall(
+    function preRelayedCall(
         GsnTypes.RelayRequest calldata relayRequest,
         bytes calldata signature,
         bytes calldata approvalData,
-        uint256 maxPossibleCharge
-    ) external override virtual view
-    returns (bytes memory) {
-        (relayRequest, approvalData, maxPossibleCharge, signature);
+        uint256 maxPossibleGas
+    )
+    external
+    override
+    virtual
+    returns (bytes memory context, bool revertOnRecipientRevert) {
+        (relayRequest, signature, approvalData, maxPossibleGas);
 
         if ( useSenderWhitelist ) {
             require( senderWhitelist[relayRequest.request.from], "sender not whitelisted");
@@ -38,6 +41,6 @@ contract WhitelistPaymaster is AcceptEverythingPaymaster {
         if ( useTargetWhitelist ) {
             require( targetWhitelist[relayRequest.request.to], "target not whitelisted");
         }
-        return "";
+        return ("", false);
     }
 }

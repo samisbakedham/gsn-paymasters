@@ -1,4 +1,5 @@
-import { RelayHubInstance, StakeManagerInstance } from '../types/truffle-contracts'
+import { IStakeManagerInstance } from '../types/truffle-contracts'
+import { RelayHubInstance } from '@opengsn/gsn/dist/types/truffle-contracts'
 
 export async function revertReason (func: Promise<any>): Promise<string> {
   try {
@@ -9,7 +10,7 @@ export async function revertReason (func: Promise<any>): Promise<string> {
   }
 }
 
-export async function registerAsRelayServer (stakeManager: StakeManagerInstance, relay: string, relayOwner: string, hub: RelayHubInstance): Promise<void> {
+export async function registerAsRelayServer (stakeManager: IStakeManagerInstance, relay: string, relayOwner: string, hub: RelayHubInstance): Promise<void> {
   await stakeManager.stakeForAddress(relay, 7 * 24 * 3600, {
     from: relayOwner,
     value: (2e18).toString()

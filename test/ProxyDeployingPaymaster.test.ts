@@ -4,8 +4,8 @@ import { getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
 import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
 import TypedRequestData, { GsnRequestType } from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
 import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
-import { defaultEnvironment } from '@opengsn/gsn/dist/src/relayclient/types/Environments'
-import { snapshot, revert } from '@opengsn/gsn/dist/test/TestUtils'
+import { defaultEnvironment } from '@opengsn/gsn/dist/src/common/Environments'
+import { snapshot, revert, deployHub } from '@opengsn/gsn/dist/test/TestUtils'
 import { GsnTestEnvironment } from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
 
 import { constants, expectEvent } from '@openzeppelin/test-helpers'
@@ -18,11 +18,11 @@ import {
   TestTokenInstance,
   TestUniswapInstance,
   ProxyDeployingPaymasterInstance,
-  RelayHubInstance,
   TestHubInstance,
   TestCounterInstance,
   ProxyFactoryInstance
 } from '../types/truffle-contracts'
+import { RelayHubInstance } from '@opengsn/gsn/dist/types/truffle-contracts'
 
 const RelayHub = artifacts.require('RelayHub')
 const TestHub = artifacts.require('TestHub')
@@ -39,6 +39,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
   const tokensPerEther = 2
 
   let paymaster: ProxyDeployingPaymasterInstance
+  let relayHub: RelayHubInstance
   let testHub: TestHubInstance
   let proxyAddress: Address
   let token: TestTokenInstance
@@ -56,7 +57,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
   }
 
   const gasData = {
-    pctRelayFee: '1',
+    pctRelayFee: '0',
     baseRelayFee: '0',
     gasPrice: '1',
     gasLimit: 1e6.toString()
@@ -72,7 +73,8 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
     forwarder = await Forwarder.new({ gas: 1e7 })
     recipient = await TestProxy.new(forwarder.address, { gas: 1e7 })
     testHub = await TestHub.new()
-    await paymaster.setRelayHub(testHub.address)
+    relayHub = await deployHub()
+    await paymaster.setRelayHub(relayHub.address)
     await forwarder.registerRequestType(GsnRequestType.typeName, GsnRequestType.typeSuffix)
     await paymaster.setTrustedForwarder(forwarder.address)
 
@@ -179,18 +181,15 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
   })
 
   context('#preRelayCall()', function () {
-    const preCharge = '7777'
-    let context: string
+    // With GasPrice set to 1 and fees set to 0
+    const preChargeEth = 7777
     let id: string
 
     before(async function () {
       id = (await snapshot()).result
       await token.mint(1e18.toString())
       await token.transfer(proxyAddress, 1e18.toString())
-      await paymaster.setRelayHub(senderAddress)
-      context = web3.eth.abi.encodeParameters(
-        ['address', 'address', 'uint256', 'uint256', 'address', 'address', 'address'],
-        [proxyAddress, senderAddress, preCharge, 0, constants.ZERO_ADDRESS, token.address, uniswap.address])
+      await paymaster.setRelayHub(relayHub.address)
     })
 
     after(async function () {
@@ -200,25 +199,25 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
 
     it('should deploy new identity contract if does not exist, and pre-charge it', async function () {
       await assertDeployed(proxyAddress, false)
-      const tx = await paymaster.preRelayedCall(context)
+      const tx = await paymaster.preRelayedCall(relayRequest, signature, '0x', preChargeEth)
       await assertDeployed(proxyAddress, true)
       await expectEvent.inTransaction(tx.tx, ProxyFactory, 'ProxyDeployed', { proxyAddress })
       await expectEvent.inTransaction(tx.tx, TestToken, 'Transfer', {
         from: proxyAddress,
         to: paymaster.address,
-        value: preCharge
+        value: (preChargeEth * tokensPerEther).toString()
       })
     })
 
     it('should not deploy new identity contract if exists, only pre-charge', async function () {
       const code = await web3.eth.getCode(proxyAddress)
       assert.notStrictEqual(code, '0x')
-      const tx = await paymaster.preRelayedCall(context)
+      const tx = await paymaster.preRelayedCall(relayRequest, signature, '0x', preChargeEth)
       await expectEvent.not.inTransaction(tx.tx, ProxyFactory, 'ProxyDeployed', { proxyAddress })
       await expectEvent.inTransaction(tx.tx, TestToken, 'Transfer', {
         from: proxyAddress,
         to: paymaster.address,
-        value: preCharge
+        value: (preChargeEth * tokensPerEther).toString()
       })
     })
   })
@@ -231,7 +230,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
     before(async function () {
       await token.mint(1e18.toString())
       await token.transfer(paymaster.address, 1e18.toString())
-      await paymaster.setRelayHub(testHub.address)
+      await paymaster.setRelayHub(relayHub.address)
       await paymaster.setPostGasUsage(gasUsedByPost)
       context = web3.eth.abi.encodeParameters(
         ['address', 'address', 'uint256', 'uint256', 'address', 'address', 'address'],
@@ -280,7 +279,8 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       const host = (web3.currentProvider as HttpProvider).host
       const testEnv = await GsnTestEnvironment.startGsn(host, false)
       // deposit Ether to the RelayHub for paymaster
-      hub = await RelayHub.at(testEnv.deploymentResult.relayHubAddress)
+      // need to convert to any because of namespace collision
+      hub = (await RelayHub.at(testEnv.deploymentResult.relayHubAddress)) as any as RelayHubInstance
       paymaster = await ProxyDeployingPaymaster.new([uniswap.address], proxyFactory.address)
       await paymaster.setRelayHub(hub.address)
       await paymaster.setTrustedForwarder(testEnv.deploymentResult.forwarderAddress)

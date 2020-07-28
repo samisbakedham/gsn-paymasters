@@ -3,14 +3,14 @@
 import { constants } from '@openzeppelin/test-helpers'
 import TypedRequestData, { GsnRequestType } from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
 import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
-import { defaultEnvironment } from '@opengsn/gsn/dist/src/relayclient/types/Environments'
+import { defaultEnvironment } from '@opengsn/gsn/dist/src/common/Environments'
 import { getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
+import { deployHub } from '@opengsn/gsn/dist/test/TestUtils'
 import { PrefixedHexString } from 'ethereumjs-tx'
 
 import {
-  PenalizerInstance,
-  RelayHubInstance,
-  StakeManagerInstance,
+  IPenalizerInstance,
+  IStakeManagerInstance,
   TestProxyInstance,
   TestTokenInstance,
   TestUniswapInstance,
@@ -19,12 +19,12 @@ import {
 } from '../types/truffle-contracts'
 import { registerAsRelayServer, revertReason } from './TestUtils'
 import RelayData from '@opengsn/gsn/dist/src/common/EIP712/RelayData'
+import { RelayHubInstance } from '@opengsn/gsn/dist/types/truffle-contracts'
 
 const TokenPaymaster = artifacts.require('TokenPaymaster')
 const TokenGasCalculator = artifacts.require('TokenGasCalculator')
 const TestUniswap = artifacts.require('TestUniswap')
 const TestToken = artifacts.require('TestToken')
-const RelayHub = artifacts.require('RelayHub')
 const Forwarder = artifacts.require('Forwarder')
 const StakeManager = artifacts.require('StakeManager')
 const Penalizer = artifacts.require('Penalizer')
@@ -44,15 +44,25 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
   let recipient: TestProxyInstance
   let hub: RelayHubInstance
   let forwarder: IForwarderInstance
-  let stakeManager: StakeManagerInstance
-  let penalizer: PenalizerInstance
+  let stakeManager: IStakeManagerInstance
+  let penalizer: IPenalizerInstance
   let relayRequest: RelayRequest
   let signature: PrefixedHexString
 
   async function calculatePostGas (paymaster: TokenPaymasterInstance): Promise<void> {
     const uniswap = await paymaster.uniswaps(0)
     const testpaymaster = await TokenPaymaster.new([uniswap], { gas: 1e7 })
-    const calc = await TokenGasCalculator.new(constants.ZERO_ADDRESS, constants.ZERO_ADDRESS, { gas: 10000000 })
+    const calc = await TokenGasCalculator.new(
+      constants.ZERO_ADDRESS,
+      constants.ZERO_ADDRESS,
+      defaultEnvironment.relayHubConfiguration.maxWorkerCount,
+      defaultEnvironment.relayHubConfiguration.gasReserve,
+      defaultEnvironment.relayHubConfiguration.postOverhead,
+      defaultEnvironment.relayHubConfiguration.gasOverhead,
+      defaultEnvironment.relayHubConfiguration.maximumRecipientDeposit,
+      defaultEnvironment.relayHubConfiguration.minimumUnstakeDelay,
+      defaultEnvironment.relayHubConfiguration.minimumStake,
+      { gas: 10000000 })
     await testpaymaster.transferOwnership(calc.address)
     // put some tokens in paymaster so it can calculate postRelayedCall gas usage:
     await token.mint(1e18.toString())
@@ -70,7 +80,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
     })
     stakeManager = await StakeManager.new()
     penalizer = await Penalizer.new()
-    hub = await RelayHub.new(stakeManager.address, penalizer.address)
+    hub = await deployHub(stakeManager.address, penalizer.address)
     token = await TestToken.at(await uniswap.tokenAddress())
 
     paymaster = await TokenPaymaster.new([uniswap.address], { gas: 1e7 })
@@ -120,7 +130,8 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
   })
 
   context('#acceptRelayedCall()', function () {
-    it('should reject if incorrect signature', async () => {
+    // This is now a job of the Forwarder
+    it.skip('should reject if incorrect signature', async () => {
       const wrongSignature = await getEip712Signature(
         web3,
         new TypedRequestData(

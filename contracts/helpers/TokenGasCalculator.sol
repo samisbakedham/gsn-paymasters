@@ -18,7 +18,24 @@ contract TokenGasCalculator is RelayHub {
     //(The Paymaster calls back calculateCharge, deposotFor in the relayHub,
     //so the calculator has to implement them just like a real RelayHub
     // solhint-disable-next-line no-empty-blocks
-    constructor(StakeManager _stakeManager, Penalizer _penalizer) public RelayHub(_stakeManager, _penalizer) {}
+    constructor(
+        IStakeManager _stakeManager,
+        address _penalizer,
+        uint256 _maxWorkerCount,
+        uint256 _gasReserve,
+        uint256 _postOverhead,
+        uint256 _gasOverhead,
+        uint256 _maximumRecipientDeposit,
+        uint256 _minimumUnstakeDelay,
+        uint256 _minimumStake) public RelayHub(_stakeManager,
+        _penalizer,
+        _maxWorkerCount,
+        _gasReserve,
+        _postOverhead,
+        _gasOverhead,
+        _maximumRecipientDeposit,
+        _minimumUnstakeDelay,
+        _minimumStake) {}
 
     /**
      * calculate actual cost of postRelayedCall.
@@ -50,7 +67,7 @@ contract TokenGasCalculator is RelayHub {
         bytes memory ctx1 = abi.encode(this, uint(500),token,uniswap);
         //with precharge
         uint gas0 = gasleft();
-        paymaster.postRelayedCall(ctx1, true, bytes32(0), 100, relayData);
+        paymaster.postRelayedCall(ctx1, true, 100, relayData);
         uint gas1 = gasleft();
 
         token.transferFrom(paymasterAddress, address(this), token.balanceOf(paymasterAddress));

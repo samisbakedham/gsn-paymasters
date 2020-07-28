@@ -22,7 +22,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
         bytes calldata signature,
         bytes calldata,
         uint256 maxPossibleGas
-    ) external override virtual view
+    ) public override virtual view
     returns (bytes memory) {
         GsnEip712Library.verifySignature(relayRequest, signature);
         (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);
@@ -39,8 +39,17 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
         return proxyFactory.calculateAddress(relayRequest.request.from);
     }
 
-    function preRelayedCall(bytes calldata context) external override virtual
-    returns (bytes32) {
+    function preRelayedCall(
+        GsnTypes.RelayRequest calldata relayRequest,
+        bytes calldata signature,
+        bytes calldata approvalData,
+        uint256 maxPossibleGas
+    )
+    external
+    override
+    virtual
+    returns (bytes memory, bool revertOnRecipientRevert) {
+        bytes memory context = acceptRelayedCall(relayRequest, signature, approvalData, maxPossibleGas);
         (
             address payer, address owner, uint256 tokenPrecharge,
             uint256 valueRequested, address payable destination,
@@ -53,7 +62,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
         //solhint-disable-next-line
         uniswap.tokenToEthSwapOutput(valueRequested, uint256(-1), block.timestamp+60*15);
         destination.transfer(valueRequested);
-        return 0;
+        return (context, false);
     }
 
     function deployProxy(address owner) public returns (ProxyIdentity) {
@@ -64,7 +73,6 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
     function postRelayedCall(
         bytes calldata context,
         bool,
-        bytes32,
         uint256 gasUseWithoutPost,
         GsnTypes.RelayData calldata relayData
     ) external override virtual {
@@ -73,20 +81,18 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
     }
 
     // TODO: calculate precise values for these params
-    uint256 constant private ACCEPT_RELAYED_CALL_GAS_LIMIT = 120000;
-    uint256 constant private PRE_RELAYED_CALL_GAS_LIMIT = 2000000;
-    uint256 constant private POST_RELAYED_CALL_GAS_LIMIT = 110000;
+    uint256 constant private PRE_RELAYED_CALL_GAS_LIMIT_OVERRIDE = 2000000;
 
     function getGasLimits()
-    external
+    public
     override
     view
     returns (
-        IPaymaster.GasLimits memory limits
+        GasLimits memory limits
     ) {
-        return IPaymaster.GasLimits(
-            ACCEPT_RELAYED_CALL_GAS_LIMIT,
-            PRE_RELAYED_CALL_GAS_LIMIT,
+        return GasLimits(
+            PAYMASTER_PAYS_ABOVE,
+            PRE_RELAYED_CALL_GAS_LIMIT_OVERRIDE,
             POST_RELAYED_CALL_GAS_LIMIT
         );
     }

@@ -9,10 +9,6 @@ import "@opengsn/gsn/contracts/interfaces/IPaymaster.sol";
  * This mock relay hub contract is only used to test the paymaster's 'postRelayedCall' in isolation.
  */
 contract TestHub {
-    function calculateCharge(uint256 gasUsed, GsnTypes.RelayData memory relayData) public view returns (uint256) {
-        return relayData.baseRelayFee + (gasUsed * relayData.gasPrice * (100 + relayData.pctRelayFee)) / 100;
-    }
-
     function callPostRC(
         IPaymaster paymaster,
         bytes calldata context,
@@ -20,7 +16,7 @@ contract TestHub {
         GsnTypes.RelayData calldata relayData
     )
     external {
-        paymaster.postRelayedCall(context, true, bytes32(0), gasUseWithoutPost, relayData);
+        paymaster.postRelayedCall(context, true, gasUseWithoutPost, relayData);
     }
 
     event Deposited(
