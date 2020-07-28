@@ -22,7 +22,10 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
         bytes calldata signature,
         bytes calldata,
         uint256 maxPossibleGas
-    ) public override virtual view
+    )
+    public
+    virtual
+    view
     returns (bytes memory) {
         GsnEip712Library.verifySignature(relayRequest, signature);
         (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);

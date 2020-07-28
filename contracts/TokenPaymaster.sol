@@ -64,34 +64,6 @@ contract TokenPaymaster is BasePaymaster {
         emit Received(msg.value);
     }
 
-    /**
-     * verify that payer can pay for the transaction: must have balance, and also allownce for
-     * this paymaster to use it.
-     * NOTE: A sub-class can also allow transactions that can't be pre-paid, e.g. create transaction or
-     *  a proxy call to token.approve.
-     *  In this case, sub-class the acceptRelayedCall to verify the transaction, and set a tokenPreCharge to zero.
-     *  The methods preRelayedCall, postRelayedCall already handle such zero tokenPreCharge.
-     */
-    function acceptRelayedCall(
-        GsnTypes.RelayRequest calldata relayRequest,
-        bytes calldata signature,
-        bytes calldata approvalData,
-        uint256 maxPossibleGas
-    )
-    public
-    virtual
-    view
-    returns (bytes memory context) {
-        (approvalData);
-
-        (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);
-
-        (address payer, uint256 tokenPreCharge) = _calculatePreCharge(token, uniswap, relayRequest, maxPossibleGas);
-
-        require(tokenPreCharge < token.allowance(payer, address(this)), "allowance too low");
-        return abi.encode(payer, tokenPreCharge, token, uniswap);
-    }
-
     function _getToken(bytes memory paymasterData) internal view returns (IERC20 token, IUniswap uniswap) {
         //if no specific token specified, assume the first in the list.
         if ( paymasterData.length==0 ) {
@@ -130,10 +102,10 @@ contract TokenPaymaster is BasePaymaster {
     virtual
     relayHubOnly
     returns (bytes memory context, bool revertOnRecipientRevert) {
-        context = acceptRelayedCall(relayRequest, signature, approvalData, maxPossibleGas);
-        (address payer, uint tokenPrecharge, IERC20 token) = abi.decode(context, (address, uint, IERC20));
+        (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);
+        (address payer, uint256 tokenPrecharge) = _calculatePreCharge(token, uniswap, relayRequest, maxPossibleGas);
         token.transferFrom(payer, address(this), tokenPrecharge);
-        return (context, false);
+        return (abi.encode(payer, tokenPrecharge, token, uniswap), false);
     }
 
     function postRelayedCall(

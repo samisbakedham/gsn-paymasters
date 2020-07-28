@@ -15,12 +15,13 @@ import {
   TestTokenInstance,
   TestUniswapInstance,
   TokenPaymasterInstance,
-  IForwarderInstance
+  IForwarderInstance, TestHubInstance
 } from '../types/truffle-contracts'
 import { registerAsRelayServer, revertReason } from './TestUtils'
 import RelayData from '@opengsn/gsn/dist/src/common/EIP712/RelayData'
 import { RelayHubInstance } from '@opengsn/gsn/dist/types/truffle-contracts'
 
+const TestHub = artifacts.require('TestHub')
 const TokenPaymaster = artifacts.require('TokenPaymaster')
 const TokenGasCalculator = artifacts.require('TokenGasCalculator')
 const TestUniswap = artifacts.require('TestUniswap')
@@ -129,34 +130,39 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
     )
   })
 
-  context('#acceptRelayedCall()', function () {
-    // This is now a job of the Forwarder
-    it.skip('should reject if incorrect signature', async () => {
-      const wrongSignature = await getEip712Signature(
-        web3,
-        new TypedRequestData(
-          222,
-          forwarder.address,
-          relayRequest
-        )
-      )
-      assert.equal(await revertReason(paymaster.acceptRelayedCall(relayRequest, wrongSignature, '0x', 1e6)), 'signature mismatch')
-    })
+  context('#preRelayedCall', function () {
+    let testHub: TestHubInstance
+    context('revert reasons', function () {
+      before(async function () {
+        testHub = await TestHub.new(
+          constants.ZERO_ADDRESS,
+          constants.ZERO_ADDRESS,
+          defaultEnvironment.relayHubConfiguration.maxWorkerCount,
+          defaultEnvironment.relayHubConfiguration.gasReserve,
+          defaultEnvironment.relayHubConfiguration.postOverhead,
+          defaultEnvironment.relayHubConfiguration.gasOverhead,
+          defaultEnvironment.relayHubConfiguration.maximumRecipientDeposit,
+          defaultEnvironment.relayHubConfiguration.minimumUnstakeDelay,
+          defaultEnvironment.relayHubConfiguration.minimumStake,
+          { gas: 10000000 })
+        await paymaster.setRelayHub(testHub.address)
+      })
 
-    it('should reject if not enough balance', async () => {
-      assert.equal(await revertReason(paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)), 'balance too low')
-    })
+      it('should reject if not enough balance', async () => {
+        assert.equal(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), 'balance too low -- Reason given: balance too low.')
+      })
 
-    it('should reject if unknown paymasterData', async () => {
-      const req = mergeData(relayRequest, { paymasterData: '0x1234' })
-      const signature = await getEip712Signature(web3, new TypedRequestData(1, forwarder.address, req))
-      assert.equal(await revertReason(paymaster.acceptRelayedCall(req, signature, '0x', 1e6)), 'invalid uniswap address in paymasterData')
-    })
+      it('should reject if unknown paymasterData', async () => {
+        const req = mergeData(relayRequest, { paymasterData: '0x1234' })
+        const signature = await getEip712Signature(web3, new TypedRequestData(1, forwarder.address, req))
+        assert.equal(await revertReason(testHub.callPreRC(req, signature, '0x', 1e6)), 'invalid uniswap address in paymasterData -- Reason given: invalid uniswap address in paymasterData.')
+      })
 
-    it('should reject if unsupported uniswap in paymasterData', async () => {
-      const req = mergeData(relayRequest, { paymasterData: web3.eth.abi.encodeParameter('address', nonUniswap) })
-      const signature = await getEip712Signature(web3, new TypedRequestData(1, forwarder.address, req))
-      assert.equal(await revertReason(paymaster.acceptRelayedCall(req, signature, '0x', 1e6)), 'unsupported token uniswap')
+      it('should reject if unsupported uniswap in paymasterData', async () => {
+        const req = mergeData(relayRequest, { paymasterData: web3.eth.abi.encodeParameter('address', nonUniswap) })
+        const signature = await getEip712Signature(web3, new TypedRequestData(1, forwarder.address, req))
+        assert.equal(await revertReason(testHub.callPreRC(req, signature, '0x', 1e6)), 'unsupported token uniswap -- Reason given: unsupported token uniswap.')
+      })
     })
 
     context('with funded recipient', function () {
@@ -166,7 +172,8 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       })
 
       it('should reject if no token approval', async () => {
-        assert.include(await revertReason(paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)), 'allowance too low')
+        const expectedError = 'ERC20: transfer amount exceeds allowance -- Reason given: ERC20: transfer amount exceeds allowance.'
+        assert.include(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), expectedError)
       })
 
       context('with token approved for paymaster', function () {
@@ -174,18 +181,20 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
           await recipient.execute(token.address, token.contract.methods.approve(paymaster.address, -1).encodeABI())
         })
 
-        it('should succeed acceptRelayedCall and return default token/uniswap', async () => {
-          const ret = await paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)
-          const decoded = web3.eth.abi.decodeParameters(['address', 'address', 'address', 'address'], ret)
+        it('callPreRC should succeed and return default token/uniswap', async () => {
+          const ret = await testHub.callPreRC.call(relayRequest, signature, '0x', 1e6)
+          // @ts-ignore
+          const decoded = web3.eth.abi.decodeParameters(['address', 'address', 'address', 'address'], ret.context)
           assert.equal(decoded[2], token.address)
           assert.equal(decoded[3], uniswap.address)
         })
 
-        it('should succeed acceptRelayedCall with specific token/uniswap', async () => {
+        it('callPreRC should succeed with specific token/uniswap', async () => {
           const req = mergeData(relayRequest, { paymasterData: web3.eth.abi.encodeParameter('address', uniswap.address) })
           const signature = await getEip712Signature(web3, new TypedRequestData(1, forwarder.address, req))
-          const ret = await paymaster.acceptRelayedCall(req, signature, '0x', 1e6)
-          const decoded = web3.eth.abi.decodeParameters(['address', 'address', 'address', 'address'], ret) as any
+          const ret = await testHub.callPreRC.call(req, signature, '0x', 1e6)
+          // @ts-ignore
+          const decoded = web3.eth.abi.decodeParameters(['address', 'address', 'address', 'address'], ret.context) as any
           assert.equal(decoded[2], token.address)
           assert.equal(decoded[3], uniswap.address)
         })
@@ -200,6 +209,22 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       // TODO: not needed. use startGsn instead
       await registerAsRelayServer(stakeManager, relay, relayOwner, hub)
       await hub.depositFor(paymaster.address, { value: paymasterDeposit })
+      await paymaster.setRelayHub(hub.address)
+    })
+
+    it('should reject if incorrect signature', async () => {
+      const wrongSignature = await getEip712Signature(
+        web3,
+        new TypedRequestData(
+          222,
+          forwarder.address,
+          relayRequest
+        )
+      )
+      const gas = 5000000
+      const relayCall = await hub.relayCall.call(relayRequest, wrongSignature, '0x', gas, { from: relay, gas })
+      // @ts-ignore
+      assert.equal(relayCall.revertReason, 'signature mismatch')
     })
 
     it('should pay with token to make a call', async function () {

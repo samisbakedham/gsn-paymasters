@@ -72,7 +72,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
     paymaster = await ProxyDeployingPaymaster.new([uniswap.address], proxyFactory.address)
     forwarder = await Forwarder.new({ gas: 1e7 })
     recipient = await TestProxy.new(forwarder.address, { gas: 1e7 })
-    testHub = await TestHub.new()
+
     relayHub = await deployHub()
     await paymaster.setRelayHub(relayHub.address)
     await forwarder.registerRequestType(GsnRequestType.typeName, GsnRequestType.typeSuffix)
