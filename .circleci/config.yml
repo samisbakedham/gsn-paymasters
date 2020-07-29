@@ -13,7 +13,7 @@ jobs:
           steps:
             - run:
                 name: Remove cached symlink
-                command: rm node_modules/@opengsn/gsn
+                command: rm -f node_modules/@opengsn/gsn
             - run: yarn
             - run:
                 name: Clone GSN repository
