@@ -11,7 +11,7 @@ import { GsnTestEnvironment } from '@opengsn/gsn/dist/src/relayclient/GsnTestEnv
 import { constants, expectEvent } from '@openzeppelin/test-helpers'
 import { PrefixedHexString } from 'ethereumjs-tx'
 import { HttpProvider } from 'web3-core'
-import { revertReason } from './TestUtils'
+import { registerAsRelayServer, revertReason } from './TestUtils'
 import {
   IForwarderInstance,
   TestProxyInstance,
@@ -20,9 +20,10 @@ import {
   ProxyDeployingPaymasterInstance,
   TestHubInstance,
   TestCounterInstance,
-  ProxyFactoryInstance
+  ProxyFactoryInstance, StakeManagerInstance
 } from '../types/truffle-contracts'
 import { RelayHubInstance } from '@opengsn/gsn/dist/types/truffle-contracts'
+import { transferErc20Error } from './TokenPaymaster.test'
 
 const RelayHub = artifacts.require('RelayHub')
 const TestHub = artifacts.require('TestHub')
@@ -33,6 +34,7 @@ const TestCounter = artifacts.require('TestCounter')
 const TestUniswap = artifacts.require('TestUniswap')
 const ProxyFactory = artifacts.require('ProxyFactory')
 const ProxyIdentity = artifacts.require('ProxyIdentity')
+const StakeManager = artifacts.require('StakeManager')
 const ProxyDeployingPaymaster = artifacts.require('ProxyDeployingPaymaster')
 
 contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
@@ -45,6 +47,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
   let token: TestTokenInstance
   let relayRequest: RelayRequest
   let recipient: TestProxyInstance
+  let stakeManager: StakeManagerInstance
   let signature: PrefixedHexString
   let uniswap: TestUniswapInstance
   let forwarder: IForwarderInstance
@@ -72,8 +75,19 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
     paymaster = await ProxyDeployingPaymaster.new([uniswap.address], proxyFactory.address)
     forwarder = await Forwarder.new({ gas: 1e7 })
     recipient = await TestProxy.new(forwarder.address, { gas: 1e7 })
-
-    relayHub = await deployHub()
+    stakeManager = await StakeManager.new()
+    testHub = await TestHub.new(
+      stakeManager.address,
+      constants.ZERO_ADDRESS,
+      defaultEnvironment.relayHubConfiguration.maxWorkerCount,
+      defaultEnvironment.relayHubConfiguration.gasReserve,
+      defaultEnvironment.relayHubConfiguration.postOverhead,
+      defaultEnvironment.relayHubConfiguration.gasOverhead,
+      defaultEnvironment.relayHubConfiguration.maximumRecipientDeposit,
+      defaultEnvironment.relayHubConfiguration.minimumUnstakeDelay,
+      defaultEnvironment.relayHubConfiguration.minimumStake,
+      { gas: 10000000 })
+    relayHub = await deployHub(stakeManager.address)
     await paymaster.setRelayHub(relayHub.address)
     await forwarder.registerRequestType(GsnRequestType.typeName, GsnRequestType.typeSuffix)
     await paymaster.setTrustedForwarder(forwarder.address)
@@ -107,21 +121,13 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
     )
   })
 
-  context('#acceptRelayCall()', function () {
-    it('should reject if incorrect signature', async () => {
-      const wrongSignature = await getEip712Signature(
-        web3,
-        new TypedRequestData(
-          222,
-          forwarder.address,
-          relayRequest
-        )
-      )
-      assert.equal(await revertReason(paymaster.acceptRelayedCall(relayRequest, wrongSignature, '0x', 1e6)), 'signature mismatch')
+  context('#preRelayedCall()', function () {
+    before(async function () {
+      await paymaster.setRelayHub(testHub.address)
     })
 
     it('should reject if not enough balance', async () => {
-      assert.equal(await revertReason(paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)), 'balance too low')
+      assert.equal(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), 'balance too low -- Reason given: balance too low.')
     })
 
     context('with token balance at identity address', function () {
@@ -141,11 +147,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
             relayRequestX
           )
         )
-        assert.equal(await revertReason(paymaster.acceptRelayedCall(relayRequestX, signatureX, '0x', 1e6)), 'balance too low')
-      })
-
-      it('should accept if payer is an identity that was not deployed yet', async function () {
-        await paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)
+        assert.equal(await revertReason(testHub.callPreRC(relayRequestX, signatureX, '0x', 1e6)), 'balance too low -- Reason given: balance too low.')
       })
 
       context('with identity deployed', function () {
@@ -154,6 +156,8 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
         before(async function () {
           id = (await snapshot()).result
           await paymaster.deployProxy(senderAddress)
+          await registerAsRelayServer(stakeManager, relayWorker, senderAddress, relayHub)
+          await relayHub.depositFor(paymaster.address, { value: 1e18.toString() })
         })
 
         after(async function () {
@@ -161,8 +165,27 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
           await revert(id)
         })
 
+        it('should accept if payer is an identity that was not deployed yet', async function () {
+          await testHub.callPreRC(relayRequest, signature, '0x', 1e6)
+        })
+
+        it('should reject if incorrect signature', async () => {
+          const wrongSignature = await getEip712Signature(
+            web3,
+            new TypedRequestData(
+              222,
+              forwarder.address,
+              relayRequest
+            )
+          )
+          const gas = 5000000
+          const relayCall = await relayHub.relayCall.call(relayRequest, wrongSignature, '0x', gas, { from: relayWorker, gas })
+          // @ts-ignore
+          assert.equal(relayCall.revertReason, 'signature mismatch')
+        })
+
         it('should accept because identity gave approval to the paymaster', async function () {
-          await paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)
+          await testHub.callPreRC(relayRequest, signature, '0x', 1e6)
         })
 
         context('with token approval withdrawn', function () {
@@ -173,7 +196,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
           })
 
           it('should reject if payer is an already deployed identity and approval is insufficient', async function () {
-            assert.equal(await revertReason(paymaster.acceptRelayedCall(relayRequest, signature, '0x', 1e6)), 'identity deployed but allowance too low')
+            assert.equal(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), transferErc20Error)
           })
         })
       })

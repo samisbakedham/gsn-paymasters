@@ -17,25 +17,6 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
         proxyFactory = _proxyFactory;
     }
 
-    function acceptRelayedCall(
-        GsnTypes.RelayRequest calldata relayRequest,
-        bytes calldata signature,
-        bytes calldata,
-        uint256 maxPossibleGas
-    )
-    public
-    virtual
-    view
-    returns (bytes memory) {
-        GsnEip712Library.verifySignature(relayRequest, signature);
-        (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);
-        (address payer, uint256 tokenPreCharge) = _calculatePreCharge(token, uniswap, relayRequest, maxPossibleGas);
-
-        bool isApproved = tokenPreCharge < token.allowance(payer, address(this));
-        require(isApproved || !payer.isContract(), "identity deployed but allowance too low");
-        return abi.encode(payer, relayRequest.request.from, tokenPreCharge, relayRequest.request.value, relayRequest.relayData.forwarder, token, uniswap);
-    }
-
     function getPayer(GsnTypes.RelayRequest calldata relayRequest) public override virtual view returns (address) {
         // TODO: if (rr.paymasterData != '') return address(rr.paymasterData)
         //  this is to support pre-existing proxies/proxies with changed owner
@@ -52,20 +33,16 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
     override
     virtual
     returns (bytes memory, bool revertOnRecipientRevert) {
-        bytes memory context = acceptRelayedCall(relayRequest, signature, approvalData, maxPossibleGas);
-        (
-            address payer, address owner, uint256 tokenPrecharge,
-            uint256 valueRequested, address payable destination,
-            IERC20 token, IUniswap uniswap
-        ) = abi.decode(context, (address, address, uint256, uint256, address, IERC20, IUniswap));
+        (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);
+        (address payer, uint256 tokenPrecharge) = _calculatePreCharge(token, uniswap, relayRequest, maxPossibleGas);
         if (!payer.isContract()) {
-            deployProxy(owner);
+            deployProxy(relayRequest.request.from);
         }
         token.transferFrom(payer, address(this), tokenPrecharge);
         //solhint-disable-next-line
-        uniswap.tokenToEthSwapOutput(valueRequested, uint256(-1), block.timestamp+60*15);
-        destination.transfer(valueRequested);
-        return (context, false);
+        uniswap.tokenToEthSwapOutput(relayRequest.request.value, uint256(-1), block.timestamp+60*15);
+        payable(relayRequest.relayData.forwarder).transfer(relayRequest.request.value);
+        return (abi.encode(payer, relayRequest.request.from, tokenPrecharge, relayRequest.request.value, relayRequest.relayData.forwarder, token, uniswap), false);
     }
 
     function deployProxy(address owner) public returns (ProxyIdentity) {

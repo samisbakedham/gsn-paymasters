@@ -15,7 +15,7 @@ import "../TokenPaymaster.sol";
  */
 contract TokenGasCalculator is RelayHub {
 
-    //(The Paymaster calls back calculateCharge, deposotFor in the relayHub,
+    //(The Paymaster calls back calculateCharge, depositFor in the relayHub,
     //so the calculator has to implement them just like a real RelayHub
     // solhint-disable-next-line no-empty-blocks
     constructor(

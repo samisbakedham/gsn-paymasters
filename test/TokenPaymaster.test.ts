@@ -31,6 +31,8 @@ const StakeManager = artifacts.require('StakeManager')
 const Penalizer = artifacts.require('Penalizer')
 const TestProxy = artifacts.require('TestProxy')
 
+export const transferErc20Error = 'ERC20: transfer amount exceeds allowance -- Reason given: ERC20: transfer amount exceeds allowance.'
+
 function mergeData (req: RelayRequest, override: Partial<RelayData>): RelayRequest {
   return {
     request: req.request,
@@ -172,8 +174,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       })
 
       it('should reject if no token approval', async () => {
-        const expectedError = 'ERC20: transfer amount exceeds allowance -- Reason given: ERC20: transfer amount exceeds allowance.'
-        assert.include(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), expectedError)
+        assert.include(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), transferErc20Error)
       })
 
       context('with token approved for paymaster', function () {
