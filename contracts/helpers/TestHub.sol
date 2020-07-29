@@ -12,7 +12,6 @@ import "@opengsn/gsn/contracts/RelayHub.sol";
  */
 contract TestHub is RelayHub {
 
-    // solhint-disable-next-line no-empty-blocks
     constructor(
         IStakeManager _stakeManager,
         address _penalizer,
@@ -30,7 +29,9 @@ contract TestHub is RelayHub {
         _gasOverhead,
         _maximumRecipientDeposit,
         _minimumUnstakeDelay,
-        _minimumStake) {}
+        _minimumStake)
+        // solhint-disable-next-line no-empty-blocks
+    {}
 
     function callPreRC(
         GsnTypes.RelayRequest calldata relayRequest,

@@ -29,23 +29,28 @@ contract HashcashPaymaster is AcceptEverythingPaymaster, HashcashDifficulty {
         difficulty = _difficulty;
     }
 
-    function acceptRelayedCall(
+    function preRelayedCall(
         GsnTypes.RelayRequest calldata relayRequest,
         bytes calldata signature,
         bytes calldata approvalData,
-        uint256 maxPossibleCharge
-    ) external override virtual view
-    returns (bytes memory) {
-        (relayRequest, approvalData, maxPossibleCharge, signature);
+        uint256 maxPossibleGas
+    )
+    external
+    override
+    virtual
+    relayHubOnly
+    returns (bytes memory, bool revertOnRecipientRevert) {
+
+        (relayRequest, approvalData, maxPossibleGas, signature);
 
         require(approvalData.length == 64, "no hash in approvalData");
         (bytes32 hash, uint256 hashNonce) = abi.decode(approvalData, (bytes32, uint256));
         bytes32 calcHash = keccak256(abi.encode(
-            relayRequest.request.from,
-            relayRequest.request.nonce,
-            hashNonce));
+                relayRequest.request.from,
+                relayRequest.request.nonce,
+                hashNonce));
         require(hash == calcHash, "wrong hash");
         require(uint256(hash) < (uint256(1) << (256 - difficulty)), "difficulty not met");
-        return "";
+        return ("", false);
     }
 }

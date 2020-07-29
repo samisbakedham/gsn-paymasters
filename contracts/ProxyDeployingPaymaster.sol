@@ -33,6 +33,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
     override
     virtual
     returns (bytes memory, bool revertOnRecipientRevert) {
+        (relayRequest, signature, approvalData, maxPossibleGas);
         (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);
         (address payer, uint256 tokenPrecharge) = _calculatePreCharge(token, uniswap, relayRequest, maxPossibleGas);
         if (!payer.isContract()) {

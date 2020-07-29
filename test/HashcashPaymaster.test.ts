@@ -7,6 +7,7 @@ import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 
 import { GsnTestEnvironment } from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
 import { expectRevert } from '@openzeppelin/test-helpers'
+import { HttpProvider } from 'web3-core'
 
 const HashcashPaymaster = artifacts.require('HashcashPaymaster')
 const SampleRecipient = artifacts.require('SampleRecipient')
@@ -46,16 +47,14 @@ contract('HashcashPaymaster', ([from]) => {
   })
 
   it('should fail to send without approvalData', async () => {
-    // @ts-expect-error
-    const p = new RelayProvider(web3.currentProvider, gsnConfig)
+    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig)
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
     await expectRevert(s.something(), 'no hash in approvalData')
   })
 
   it('should fail with no wrong hash', async () => {
-    // @ts-expect-error
-    const p = new RelayProvider(web3.currentProvider, gsnConfig, {
+    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
       asyncApprovalData: async () => '0x'.padEnd(2 + 64 * 2, '0')
     })
     // @ts-expect-error
@@ -65,9 +64,8 @@ contract('HashcashPaymaster', ([from]) => {
   })
 
   it('should fail low difficulty', async () => {
-    // @ts-expect-error
-    const p = new RelayProvider(web3.currentProvider, gsnConfig, {
-      asyncApprovalData: createHashcashAsyncApproval(1)
+    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
+      asyncApprovalData: createHashcashAsyncApproval(1) as (relayRequest: RelayRequest) => Promise<string>
     })
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
@@ -77,9 +75,8 @@ contract('HashcashPaymaster', ([from]) => {
 
   it('should succeed with proper difficulty difficulty', async function () {
     this.timeout(35000)
-    // @ts-expect-error
-    const p = new RelayProvider(web3.currentProvider, gsnConfig, {
-      asyncApprovalData: createHashcashAsyncApproval(15)
+    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
+      asyncApprovalData: createHashcashAsyncApproval(15) as (relayRequest: RelayRequest) => Promise<string>
     })
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
@@ -105,11 +102,10 @@ contract('HashcashPaymaster', ([from]) => {
   it('should calculate approval in advance', async () => {
     const approval = await calculateHashcashApproval(web3, from, s.address, gsnConfig.forwarderAddress ?? '', pm.address)
     console.log('approval=', approval)
-    // @ts-expect-error
-    const p = new RelayProvider(web3.currentProvider, gsnConfig, {
+    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
       asyncApprovalData: async (req: RelayRequest) => {
         console.log('req=', req)
-        return approval
+        return approval!
       }
     })
     // @ts-expect-error
@@ -122,8 +118,7 @@ contract('HashcashPaymaster', ([from]) => {
     // read next valid hashash approval data, and always return it.
     const approvalfunc = createHashcashAsyncApproval(15)
     let saveret: string
-    // @ts-expect-error
-    const p = new RelayProvider(web3.currentProvider, gsnConfig, {
+    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
       asyncApprovalData: async (request: RelayRequest) => {
         saveret = await approvalfunc(request) ?? ''
         return saveret
@@ -133,8 +128,7 @@ contract('HashcashPaymaster', ([from]) => {
     SampleRecipient.web3.setProvider(p)
     await s.something()
 
-    // @ts-expect-error
-    const p1 = new RelayProvider(web3.currentProvider, gsnConfig, {
+    const p1 = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
       asyncApprovalData: async (req: RelayRequest) => await Promise.resolve(saveret)
     })
     // @ts-expect-error

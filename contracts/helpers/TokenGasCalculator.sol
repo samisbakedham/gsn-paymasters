@@ -35,7 +35,9 @@ contract TokenGasCalculator is RelayHub {
         _gasOverhead,
         _maximumRecipientDeposit,
         _minimumUnstakeDelay,
-        _minimumStake) {}
+        _minimumStake)
+        // solhint-disable-next-line no-empty-blocks
+    {}
 
     /**
      * calculate actual cost of postRelayedCall.
