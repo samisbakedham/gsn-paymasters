@@ -65,7 +65,7 @@ contract('HashcashPaymaster', ([from]) => {
 
   it('should fail low difficulty', async () => {
     const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
-      asyncApprovalData: createHashcashAsyncApproval(1) as (relayRequest: RelayRequest) => Promise<string>
+      asyncApprovalData: createHashcashAsyncApproval(1)
     })
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
@@ -76,7 +76,7 @@ contract('HashcashPaymaster', ([from]) => {
   it('should succeed with proper difficulty difficulty', async function () {
     this.timeout(35000)
     const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
-      asyncApprovalData: createHashcashAsyncApproval(15) as (relayRequest: RelayRequest) => Promise<string>
+      asyncApprovalData: createHashcashAsyncApproval(15)
     })
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)

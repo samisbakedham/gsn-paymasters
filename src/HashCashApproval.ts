@@ -12,7 +12,7 @@ import abi from 'web3-eth-abi'
  * @param callback async callback to call. return "false" to abort. true to continue
  * @return the approvalData value (bytes32 hash, uint256 counter)
  */
-export async function calculateHashcash (senderAddress: string, senderNonce: string, difficulty: any, interval?: number, callback?: any): Promise<string | null> {
+export async function calculateHashcash (senderAddress: string, senderNonce: string, difficulty: any, interval?: number, callback?: any): Promise<string> {
   const diffMax = toBN(1).shln(256 - difficulty)
   let hashNonce = 0
   let intervalCount = 0
@@ -34,7 +34,7 @@ export async function calculateHashcash (senderAddress: string, senderNonce: str
     if (interval != null && intervalCount++ > interval) {
       intervalCount = 0
       const cbresp = await callback(difficulty, hashNonce)
-      if (cbresp == null) { return null }
+      if (cbresp == null) { return '0x' }
     }
   }
 }
@@ -51,8 +51,8 @@ export async function calculateHashcash (senderAddress: string, senderNonce: str
  * @returns - an async function to pass as a parameter for "asyncApprovalData" of the
  *  RelayProvider. see the HashcashPaymaster.test.ts for usage example.
  */
-export function createHashcashAsyncApproval (difficulty: any, interval?: number, callback?: any): (relayRequest: RelayRequest) => Promise<string | null> {
-  return async function (relayRequest: RelayRequest): Promise<string | null> {
+export function createHashcashAsyncApproval (difficulty: any, interval?: number, callback?: any): (relayRequest: RelayRequest) => Promise<string> {
+  return async function (relayRequest: RelayRequest): Promise<string> {
     console.log('=== calculating approval')
     const { from: senderAddress, nonce: senderNonce } = relayRequest.request
     const val = calculateHashcash(senderAddress, senderNonce, difficulty, interval, callback)
