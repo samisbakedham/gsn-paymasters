@@ -1,6 +1,6 @@
 import 'source-map-support/register'
 import { RelayProvider } from '@opengsn/gsn'
-import { getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
+import { decodeRevertReason, getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
 import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
 import TypedRequestData, { GsnRequestType } from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
 import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
@@ -181,7 +181,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
           const gas = 5000000
           const relayCall = await relayHub.relayCall.call(relayRequest, wrongSignature, '0x', gas, { from: relayWorker, gas })
           // @ts-ignore
-          assert.equal(relayCall.revertReason, 'signature mismatch')
+          assert.equal(decodeRevertReason(relayCall.returnValue), 'signature mismatch')
         })
 
         it('should accept because identity gave approval to the paymaster', async function () {

@@ -4,7 +4,7 @@ import { constants } from '@openzeppelin/test-helpers'
 import TypedRequestData, { GsnRequestType } from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
 import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import { defaultEnvironment } from '@opengsn/gsn/dist/src/common/Environments'
-import { getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
+import { decodeRevertReason, getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
 import { deployHub } from '@opengsn/gsn/dist/test/TestUtils'
 import { PrefixedHexString } from 'ethereumjs-tx'
 
@@ -225,7 +225,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       const gas = 5000000
       const relayCall = await hub.relayCall.call(relayRequest, wrongSignature, '0x', gas, { from: relay, gas })
       // @ts-ignore
-      assert.equal(relayCall.revertReason, 'signature mismatch')
+      assert.equal(decodeRevertReason(relayCall.returnValue), 'signature mismatch')
     })
 
     it('should pay with token to make a call', async function () {
