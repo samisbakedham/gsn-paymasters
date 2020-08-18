@@ -9,7 +9,7 @@ import "./TokenPaymaster.sol";
 contract ProxyDeployingPaymaster is TokenPaymaster {
     using Address for address;
 
-    string public override versionPaymaster = "2.0.0-alpha.1+opengsn.proxydeploying.ipaymaster";
+    string public override versionPaymaster = "2.0.0-beta.1+opengsn.proxydeploying.ipaymaster";
 
     ProxyFactory public proxyFactory;
 
@@ -72,7 +72,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
         GasLimits memory limits
     ) {
         return GasLimits(
-            PAYMASTER_PAYS_ABOVE,
+            PAYMASTER_ACCEPTANCE_BUDGET,
             PRE_RELAYED_CALL_GAS_LIMIT_OVERRIDE,
             POST_RELAYED_CALL_GAS_LIMIT
         );

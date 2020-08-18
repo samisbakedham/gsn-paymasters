@@ -7,7 +7,7 @@ import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 
 contract TestProxy is BaseRelayRecipient, Ownable  {
 
-    string public override versionRecipient = "2.0.0-alpha.1+opengsn.testproxy.irelayrecipient";
+    string public override versionRecipient = "2.0.0-beta.1+opengsn.testproxy.irelayrecipient";
 
     constructor(address forwarder) public {
         trustedForwarder = forwarder;
