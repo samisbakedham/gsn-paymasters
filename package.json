@@ -1,16 +1,17 @@
 {
   "name": "@opengsn/paymasters",
-  "version": "2.0.0-alpha.2",
+  "version": "2.0.0-beta.1.3",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@opengsn/gsn": "2.0.0-alpha.1",
-    "@openzeppelin/upgrades": "2.8.0",
+    "@opengsn/gsn": "2.0.0-beta.1.3",
     "@openzeppelin/contracts": "3.1.0",
+    "@openzeppelin/upgrades": "2.8.0",
     "@types/source-map-support": "^0.5.1",
-    "web3-eth-contract": "1.2.9",
+    "run-with-testrpc": "^0.3.1",
     "web3-core-helpers": "1.2.9",
     "web3-eth-abi": "1.2.9",
+    "web3-eth-contract": "1.2.9",
     "web3-utils": "1.2.9"
   },
   "devDependencies": {
@@ -28,7 +29,6 @@
     "eslint-plugin-promise": "4.2.1",
     "eslint-plugin-standard": "4.0.1",
     "ethereumjs-tx": "2.1.2",
-    "run-with-testrpc": "0.3.1",
     "solhint": "3.0.0",
     "solidity-string-utils": "^0.0.4",
     "source-map-support": "0.5.16",
@@ -40,15 +40,13 @@
     "web3": "1.2.7"
   },
   "scripts": {
-    "solc": "fastsolc #!NOGIT",
-    "bdl" : "bdl test test/TokenPaymaster.test.ts",
     "generate": "rm -rf ./build/contracts && npx truffle compile && typechain --target trufflehotfix './build/contracts/**/*.json'",
-    "test": "yarn tmp:prepare && yarn lint && run-with-testrpc --hardfork 'istanbul' --gasLimit 100000000 'yarn truffle-test'",
-    "runtest": "run-with-testrpc --hardfork 'istanbul' --gasLimit 100000000 'truffle test'",
+    "ci": "yarn prepack && yarn test",
+    "test": "run-with-testrpc --hardfork 'istanbul' --gasLimit 100000000 'truffle test'",
+    "ganache-with-gsn": "run-with-testrpc --gasLimit 100000000 'gsn start'",
     "tsc": "tsc --noEmit",
-    "tmp:prepare": "./scripts/prepublish",
-    "truffle-test": "rm -rf build/ && yarn truffle-compile && truffle test",
-    "truffle-compile": "truffle compile",
+    "prepack": "./scripts/prepack",
+    "truffle-compile": "rm -rf build/ && truffle compile",
     "lint": "yarn run lint:js && yarn run lint:sol",
     "lint:fix": "yarn run lint:js:fix",
     "lint:js": "eslint -f unix .",
@@ -56,6 +54,7 @@
   },
   "files": [
     "src",
+    "dist",
     "build/contracts",
     "contracts/*.sol"
   ]

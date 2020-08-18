@@ -59,7 +59,7 @@ contract('ProxyRelayProvider', function (accounts) {
       web3.currentProvider as HttpProvider,
       gsnConfig, {
         asyncPaymasterData: async () => {
-          // @ts-ignore
+          // @ts-expect-error
           return abi.encodeParameters(['address'], [uniswap.address])
         }
       }

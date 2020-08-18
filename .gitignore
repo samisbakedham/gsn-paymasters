@@ -9,3 +9,4 @@ dist/
 !/.idea/dictionaries/
 .DS_Store
 /src/compiled/
+/json-input.json

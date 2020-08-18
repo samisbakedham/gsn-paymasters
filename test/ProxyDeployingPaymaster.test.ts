@@ -179,8 +179,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
             )
           )
           const gas = 5000000
-          const relayCall = await relayHub.relayCall.call(relayRequest, wrongSignature, '0x', gas, { from: relayWorker, gas })
-          // @ts-ignore
+          const relayCall: any = await relayHub.relayCall.call(10e6, relayRequest, wrongSignature, '0x', gas, { from: relayWorker, gas })
           assert.equal(decodeRevertReason(relayCall.returnValue), 'signature mismatch')
         })
 

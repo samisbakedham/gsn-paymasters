@@ -183,8 +183,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
         })
 
         it('callPreRC should succeed and return default token/uniswap', async () => {
-          const ret = await testHub.callPreRC.call(relayRequest, signature, '0x', 1e6)
-          // @ts-ignore
+          const ret: any = await testHub.callPreRC.call(relayRequest, signature, '0x', 1e6)
           const decoded = web3.eth.abi.decodeParameters(['address', 'address', 'address', 'address'], ret.context)
           assert.equal(decoded[2], token.address)
           assert.equal(decoded[3], uniswap.address)
@@ -193,8 +192,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
         it('callPreRC should succeed with specific token/uniswap', async () => {
           const req = mergeData(relayRequest, { paymasterData: web3.eth.abi.encodeParameter('address', uniswap.address) })
           const signature = await getEip712Signature(web3, new TypedRequestData(1, forwarder.address, req))
-          const ret = await testHub.callPreRC.call(req, signature, '0x', 1e6)
-          // @ts-ignore
+          const ret: any = await testHub.callPreRC.call(req, signature, '0x', 1e6)
           const decoded = web3.eth.abi.decodeParameters(['address', 'address', 'address', 'address'], ret.context) as any
           assert.equal(decoded[2], token.address)
           assert.equal(decoded[3], uniswap.address)
@@ -223,8 +221,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
         )
       )
       const gas = 5000000
-      const relayCall = await hub.relayCall.call(relayRequest, wrongSignature, '0x', gas, { from: relay, gas })
-      // @ts-ignore
+      const relayCall: any = await hub.relayCall.call(1e06, relayRequest, wrongSignature, '0x', gas, { from: relay, gas })
       assert.equal(decodeRevertReason(relayCall.returnValue), 'signature mismatch')
     })
 
@@ -254,7 +251,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       const preBalance = await hub.balanceOf(paymaster.address)
 
       const externalGasLimit = 5e6.toString()
-      const ret = await hub.relayCall(_relayRequest, signature, '0x', externalGasLimit, {
+      const ret = await hub.relayCall(10e6, _relayRequest, signature, '0x', externalGasLimit, {
         from: relay,
         gasPrice: 1,
         gas: externalGasLimit
@@ -278,7 +275,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       const postBalance = await hub.balanceOf(paymaster.address)
 
       assert.ok(postBalance >= preBalance,
-        `expected paymaster balance not to be reduced: pre=${preBalance.toString()} post=${postBalance.toString()}`)
+        `expected paymaster balance not to be reduced: pre=${preBalance.toString() as string} post=${postBalance.toString() as string}`)
       // TODO: add test for relayed.args.charge, once gasUsedWithoutPost parameter is fixed (currently, its too high, and Paymaster "charges" too much)
       const postPaymasterTokens = await token.balanceOf(paymaster.address)
       console.log('Paymaster "earned" tokens:', postPaymasterTokens.sub(prePaymasterTokens).toString())
