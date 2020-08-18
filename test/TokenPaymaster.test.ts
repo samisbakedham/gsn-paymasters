@@ -275,7 +275,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       const postBalance = await hub.balanceOf(paymaster.address)
 
       assert.ok(postBalance >= preBalance,
-        `expected paymaster balance not to be reduced: pre=${preBalance as string} post=${postBalance as string}`)
+        `expected paymaster balance not to be reduced: pre=${preBalance.toString() as string} post=${postBalance.toString() as string}`)
       // TODO: add test for relayed.args.charge, once gasUsedWithoutPost parameter is fixed (currently, its too high, and Paymaster "charges" too much)
       const postPaymasterTokens = await token.balanceOf(paymaster.address)
       console.log('Paymaster "earned" tokens:', postPaymasterTokens.sub(prePaymasterTokens).toString())
