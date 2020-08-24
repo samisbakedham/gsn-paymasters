@@ -1,6 +1,8 @@
 import { keccak256, toBN } from 'web3-utils'
 import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import abi from 'web3-eth-abi'
+import HashcashDifficulty from './compiled/HashcashDifficulty.json'
+import IForwarder from './compiled/IForwarder.json'
 
 /**
  * low-level hashcash calculation for the given address and nonce
@@ -84,12 +86,10 @@ function checkedCall (method: any, str: string): any {
  * @param callback
  */
 export async function calculateHashcashApproval (web3: Web3, senderAddr: string, recipientAddr: string, forwarderAddress: string, hashcashPaymasterAddr?: string, interval?: number, callback?: any): Promise<string | null> {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const HashcashDifficulty = require('../build/contracts/HashcashDifficulty')
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const IForwarder = require('../build/contracts/IForwarder')
+  // @ts-expect-error
   const paymaster = new web3.eth.Contract(HashcashDifficulty.abi, hashcashPaymasterAddr).methods
   const difficulty = await checkedCall(paymaster.difficulty(), hashcashPaymasterAddr ?? 'undefined' + ': not A HashcashPaymaster')
+  // @ts-expect-error
   const forwarder = new web3.eth.Contract(IForwarder.abi, forwarderAddress).methods
   const nonce = await checkedCall(forwarder.getNonce(senderAddr), 'No getNonce()')
 

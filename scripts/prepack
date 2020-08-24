@@ -1,12 +1,13 @@
 #!/bin/bash -e
 
 rm -rf ./dist/
-yarn truffle-compile
 yarn generate
+rm -rf src/compiled/
 
 mkdir -p src/compiled/
 
-CONTRACTS="ProxyIdentity ProxyFactory"
+CONTRACTS="ProxyIdentity ProxyFactory HashcashDifficulty IForwarder"
+
 BUILDFOLDER=./build/contracts
 OUTFOLDER=./src/compiled/
 for c in $CONTRACTS; do
