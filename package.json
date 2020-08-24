@@ -41,7 +41,7 @@
   },
   "scripts": {
     "generate": "rm -rf ./build/contracts && npx truffle compile && typechain --target trufflehotfix './build/contracts/**/*.json'",
-    "ci":: "yarn prepack && yarn test",
+    "ci": "yarn prepack && yarn test",
     "test": "run-with-testrpc --hardfork 'istanbul' --gasLimit 100000000 'truffle test'",
     "ganache-with-gsn": "run-with-testrpc --gasLimit 100000000 'gsn start'",
     "tsc": "tsc --noEmit",
