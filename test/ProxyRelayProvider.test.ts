@@ -12,6 +12,7 @@ import {
   TestTokenInstance
 } from '../types/truffle-contracts'
 import ProxyRelayProvider from '../src/ProxyRelayProvider'
+import { GSNConfig } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
 
 const RelayHub = artifacts.require('RelayHub')
 const TestToken = artifacts.require('TestToken')
@@ -38,7 +39,6 @@ contract('ProxyRelayProvider', function (accounts) {
     const {
       deploymentResult: {
         relayHubAddress,
-        stakeManagerAddress,
         forwarderAddress
       }
     } = await GsnTestEnvironment.startGsn('localhost', false)
@@ -48,10 +48,10 @@ contract('ProxyRelayProvider', function (accounts) {
     await hub.depositFor(paymaster.address, {
       value: 1e18.toString()
     })
-    const gsnConfig = {
+    const gsnConfig: Partial<GSNConfig> = {
+      logLevel: 5,
       relayHubAddress,
       forwarderAddress,
-      stakeManagerAddress,
       paymasterAddress: paymaster.address
     }
     proxyRelayProvider = new ProxyRelayProvider(

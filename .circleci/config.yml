@@ -2,16 +2,16 @@ version: 2.1
 orbs:
   node: circleci/node@1.1.6
 jobs:
-  lint:
-
-    docker: # run the steps with Docker
-      - image: circleci/node:13.11.0
-
-    steps:
-      - checkout
-      - node/with-cache:
-          steps:
-            - run: yarn lint
+#  lint:
+#
+#    docker: # run the steps with Docker
+#      - image: circleci/node:13.11.0
+#
+#    steps:
+#      - checkout
+#      - node/with-cache:
+#          steps:
+#            - run: yarn lint
 
   build-and-test:
 
@@ -22,26 +22,26 @@ jobs:
       - checkout
       - node/with-cache:
           steps:
-            - run:
-                name: Remove cached symlink
-                command: rm -f node_modules/@opengsn/gsn
+#            - run:
+#                name: Remove cached symlink
+#                command: rm -f node_modules/@opengsn/gsn
             - run: yarn
-            - run:
-                name: Clone GSN repository
-                command: >-
-                  cd .. &&
-                  sudo mkdir yarnprefix &&
-                  sudo yarn config set prefix ./yarnprefix &&
-                  sudo git clone https://github.com/opengsn/gsn.git &&
-                  cd gsn &&
-                  sudo yarn &&
-                  yarn link &&
-                  sudo chmod a+x dist/src/cli/commands/gsn.js &&
-                  cd ../project &&
-                  yarn link @opengsn/gsn
+#            - run:
+#                name: Clone GSN repository
+#                command: >-
+#                  cd .. &&
+#                  sudo mkdir yarnprefix &&
+#                  sudo yarn config set prefix ./yarnprefix &&
+#                  sudo git clone https://github.com/opengsn/gsn.git &&
+#                  cd gsn &&
+#                  sudo yarn &&
+#                  yarn link &&
+#                  sudo chmod a+x dist/src/cli/commands/gsn.js &&
+#                  cd ../project &&
+#                  yarn link @opengsn/gsn
             - run: yarn ci
 workflows:
     build-and-test:
       jobs:
-        - lint
+#        - lint
         - build-and-test

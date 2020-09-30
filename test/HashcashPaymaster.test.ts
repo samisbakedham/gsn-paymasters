@@ -12,10 +12,6 @@ import { HttpProvider } from 'web3-core'
 const HashcashPaymaster = artifacts.require('HashcashPaymaster')
 const SampleRecipient = artifacts.require('SampleRecipient')
 
-// const relayHubAddress = require('../build/gsn/RelayHub').address
-// const forwarderAddress = require('../build/gsn/Forwarder').address
-// const stakeManagerAddress = require('../build/gsn/StakeManager').address
-
 contract('HashcashPaymaster', ([from]) => {
   let pm: HashcashPaymasterInstance
   let s: SampleRecipientInstance
@@ -25,7 +21,6 @@ contract('HashcashPaymaster', ([from]) => {
     const {
       deploymentResult: {
         relayHubAddress,
-        stakeManagerAddress,
         forwarderAddress
       }
     } = await GsnTestEnvironment.startGsn('localhost')
@@ -39,9 +34,9 @@ contract('HashcashPaymaster', ([from]) => {
     await web3.eth.sendTransaction({ from, to: pm.address, value: 1e18 })
 
     gsnConfig = {
+      logLevel: 5,
       relayHubAddress,
       forwarderAddress,
-      stakeManagerAddress,
       paymasterAddress: pm.address
     }
   })
@@ -73,7 +68,7 @@ contract('HashcashPaymaster', ([from]) => {
     return expectRevert(s.something(), 'difficulty not met')
   })
 
-  it('should succeed with proper difficulty difficulty', async function () {
+  it('should succeed with proper difficulty', async function () {
     this.timeout(35000)
     const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
       asyncApprovalData: createHashcashAsyncApproval(15)

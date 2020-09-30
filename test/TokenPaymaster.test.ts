@@ -1,7 +1,10 @@
 /* global contract artifacts before it */
 
 import { constants } from '@openzeppelin/test-helpers'
-import TypedRequestData, { GsnRequestType } from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
+import TypedRequestData, {
+  GsnDomainSeparatorType,
+  GsnRequestType
+} from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
 import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import { defaultEnvironment } from '@opengsn/gsn/dist/src/common/Environments'
 import { decodeRevertReason, getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
@@ -79,7 +82,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
     // exchange rate 2 tokens per eth.
     uniswap = await TestUniswap.new(2, 1, {
       value: (5e18).toString(),
-      gas: 5e7
+      gas: 10000000
     })
     stakeManager = await StakeManager.new()
     penalizer = await Penalizer.new()
@@ -95,6 +98,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
     recipient = await TestProxy.new(forwarder.address, { gas: 1e7 })
 
     await forwarder.registerRequestType(GsnRequestType.typeName, GsnRequestType.typeSuffix)
+    await forwarder.registerDomainSeparator(GsnDomainSeparatorType.name, GsnDomainSeparatorType.version)
     await paymaster.setTrustedForwarder(forwarder.address)
     // approve uniswap to take our tokens.
     await token.approve(uniswap.address, -1)

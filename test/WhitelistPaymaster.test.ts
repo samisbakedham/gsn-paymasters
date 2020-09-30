@@ -3,6 +3,7 @@ import { SampleRecipientInstance, WhitelistPaymasterInstance } from '../types/tr
 import { RelayProvider } from '@opengsn/gsn'
 import { GsnTestEnvironment } from '@opengsn/gsn/dist/GsnTestEnvironment'
 import { expectRevert } from '@openzeppelin/test-helpers'
+import { GSNConfig } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
 
 const WhitelistPaymaster = artifacts.require('WhitelistPaymaster')
 const SampleRecipient = artifacts.require('SampleRecipient')
@@ -11,12 +12,11 @@ contract('WhitelistPaymaster', ([from, another]) => {
   let pm: WhitelistPaymasterInstance
   let s: SampleRecipientInstance
   let s1: SampleRecipientInstance
-  let gsnConfig
+  let gsnConfig: Partial<GSNConfig>
   before(async () => {
     const {
       deploymentResult: {
         relayHubAddress,
-        stakeManagerAddress,
         forwarderAddress
       }
     } = await GsnTestEnvironment.startGsn('localhost')
@@ -35,9 +35,9 @@ contract('WhitelistPaymaster', ([from, another]) => {
     console.log('s', s.address)
     console.log('s1', s1.address)
     gsnConfig = {
+      logLevel: 5,
       relayHubAddress,
       forwarderAddress,
-      stakeManagerAddress,
       paymasterAddress: pm.address
     }
     // @ts-expect-error

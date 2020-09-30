@@ -2,7 +2,10 @@ import 'source-map-support/register'
 import { RelayProvider } from '@opengsn/gsn'
 import { decodeRevertReason, getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
 import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
-import TypedRequestData, { GsnRequestType } from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
+import TypedRequestData, {
+  GsnDomainSeparatorType,
+  GsnRequestType
+} from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
 import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import { defaultEnvironment } from '@opengsn/gsn/dist/src/common/Environments'
 import { snapshot, revert, deployHub } from '@opengsn/gsn/dist/test/TestUtils'
@@ -24,6 +27,7 @@ import {
 } from '../types/truffle-contracts'
 import { RelayHubInstance } from '@opengsn/gsn/dist/types/truffle-contracts'
 import { transferErc20Error } from './TokenPaymaster.test'
+import { GSNConfig } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
 
 const RelayHub = artifacts.require('RelayHub')
 const TestHub = artifacts.require('TestHub')
@@ -90,6 +94,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
     relayHub = await deployHub(stakeManager.address)
     await paymaster.setRelayHub(relayHub.address)
     await forwarder.registerRequestType(GsnRequestType.typeName, GsnRequestType.typeSuffix)
+    await forwarder.registerDomainSeparator(GsnDomainSeparatorType.name, GsnDomainSeparatorType.version)
     await paymaster.setTrustedForwarder(forwarder.address)
 
     relayRequest = {
@@ -179,7 +184,10 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
             )
           )
           const gas = 5000000
-          const relayCall: any = await relayHub.relayCall.call(10e6, relayRequest, wrongSignature, '0x', gas, { from: relayWorker, gas })
+          const relayCall: any = await relayHub.relayCall.call(10e6, relayRequest, wrongSignature, '0x', gas, {
+            from: relayWorker,
+            gas
+          })
           assert.equal(decodeRevertReason(relayCall.returnValue), 'signature mismatch')
         })
 
@@ -336,10 +344,10 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       // create Web3 Contract instance for ProxyIdentity (cannot use truffle artifact if no code deployed)
       await assertDeployed(proxyAddress, false)
       proxy = new web3.eth.Contract(proxyIdentityArtifact.abi, proxyAddress)
-      const gsnConfig = {
+      const gsnConfig: Partial<GSNConfig> = {
+        logLevel: 5,
         relayHubAddress: testEnv.deploymentResult.relayHubAddress,
         forwarderAddress: testEnv.deploymentResult.forwarderAddress,
-        stakeManagerAddress: testEnv.deploymentResult.stakeManagerAddress,
         paymasterAddress: paymaster.address
       }
       encodedCall = counter.contract.methods.increment().encodeABI()
