@@ -6,6 +6,9 @@ import "@opengsn/gsn/contracts/BasePaymaster.sol";
 
 // accept everything.
 // this paymaster accepts any request.
+//
+// NOTE: Do NOT use this contract on a mainnet: it accepts anything, so anyone can "grief" it and drain its account
+
 contract AcceptEverythingPaymaster is BasePaymaster {
 
     function versionPaymaster() external view override virtual returns (string memory){

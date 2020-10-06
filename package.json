@@ -8,6 +8,7 @@
     "@openzeppelin/contracts": "3.1.0",
     "@openzeppelin/upgrades": "2.8.0",
     "@types/source-map-support": "^0.5.1",
+    "ethereumjs-util": "^7.0.5",
     "run-with-testrpc": "^0.3.1",
     "web3-core-helpers": "1.2.9",
     "web3-eth-abi": "1.2.9",
@@ -51,6 +52,7 @@
     "lint": "yarn run lint:js && yarn run lint:sol",
     "lint:fix": "yarn run lint:js:fix",
     "lint:js": "eslint -f unix .",
+    "lint:js:fix": "eslint -f unix . --fix",
     "lint:sol": "solhint -f unix \"contracts/**/*.sol\" --max-warnings 0"
   },
   "files": [
