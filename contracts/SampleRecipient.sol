@@ -9,12 +9,16 @@ import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 contract SampleRecipient is BaseRelayRecipient {
     string public override versionRecipient = "2.0.0-beta.1+opengsn.sample.irelayrecipient";
 
-    event Sender( address _msgSenderFunc, address sender );
+    event Sender(address _msgSenderFunc, address sender);
+    event ReceivedValue(address _msgSenderFunc, address sender, uint256 value);
 
     function setForwarder(address forwarder) public {
         trustedForwarder = forwarder;
     }
     function something() public {
         emit Sender( _msgSender(), msg.sender );
+    }
+    function somethingPayable() public payable{
+        emit ReceivedValue( _msgSender(), msg.sender, msg.value);
     }
 }

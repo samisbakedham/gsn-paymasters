@@ -31,7 +31,7 @@ contract VerifyingPaymaster is Ownable, BasePaymaster {
         bytes calldata approvalData,
         uint256 maxPossibleGas
     )
-    external
+    public
     override
     virtual
     returns (bytes memory context, bool revertOnRecipientRevert) {
