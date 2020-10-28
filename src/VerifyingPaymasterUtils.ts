@@ -2,6 +2,8 @@ import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import { ecsign, keccak256, toRpcSig } from 'ethereumjs-util'
 import ForwardRequest from '@opengsn/gsn/dist/src/common/EIP712/ForwardRequest'
 import RelayData from '@opengsn/gsn/dist/src/common/EIP712/RelayData'
+
+import abi from 'web3-eth-abi'
 import { PrefixedHexString } from 'ethereumjs-tx'
 
 /**
@@ -22,13 +24,15 @@ export function getRequestHash (relayRequest: RelayRequest): Buffer {
 }
 
 export function packForwardRequest (req: ForwardRequest): string {
-  return web3.eth.abi.encodeParameters(
+  // @ts-ignore
+  return abi.encodeParameters(
     ['address', 'address', 'uint256', 'uint256', 'uint256', 'bytes'],
     [req.from, req.to, req.value, req.gas, req.nonce, req.data])
 }
 
 export function packRelayData (data: RelayData): string {
-  return web3.eth.abi.encodeParameters(
+  // @ts-ignore
+  return abi.encodeParameters(
     ['uint256', 'uint256', 'uint256', 'address', 'address', 'bytes', 'uint256'],
     [data.gasPrice, data.pctRelayFee, data.baseRelayFee, data.relayWorker, data.paymaster, data.paymasterData, data.clientId])
 }

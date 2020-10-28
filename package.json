@@ -21,7 +21,7 @@
   "devDependencies": {
     "@openeth/truffle-typings": "0.0.6",
     "@openzeppelin/test-helpers": "^0.5.5",
-    "@truffle/hdwallet-provider": "1.0.35",
+    "@truffle/hdwallet-provider": "^1.1.1",
     "@types/chai": "4.2.11",
     "@types/web3": "1.2.2",
     "@typescript-eslint/eslint-plugin": "3.2.0",
