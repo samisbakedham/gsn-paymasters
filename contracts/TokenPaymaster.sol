@@ -77,7 +77,6 @@ contract TokenPaymaster is BasePaymaster {
     }
 
     function _calculatePreCharge(
-        IERC20 token,
         IUniswap uniswap,
         GsnTypes.RelayRequest calldata relayRequest,
         uint256 maxPossibleGas)
@@ -88,7 +87,6 @@ contract TokenPaymaster is BasePaymaster {
         uint ethMaxCharge = relayHub.calculateCharge(maxPossibleGas, relayRequest.relayData);
         ethMaxCharge += relayRequest.request.value;
         tokenPreCharge = uniswap.getTokenToEthOutputPrice(ethMaxCharge);
-        require(tokenPreCharge <= token.balanceOf(payer), "balance too low");
     }
 
     function preRelayedCall(
@@ -104,8 +102,8 @@ contract TokenPaymaster is BasePaymaster {
     returns (bytes memory context, bool revertOnRecipientRevert) {
         (relayRequest, signature, approvalData, maxPossibleGas);
         (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);
-        (address payer, uint256 tokenPrecharge) = _calculatePreCharge(token, uniswap, relayRequest, maxPossibleGas);
-        token.transferFrom(payer, address(this), tokenPrecharge);
+        (address payer, uint256 tokenPrecharge) = _calculatePreCharge(uniswap, relayRequest, maxPossibleGas);
+        require(token.transferFrom(payer, address(this), tokenPrecharge), 'cannot precharge');
         return (abi.encode(payer, tokenPrecharge, token, uniswap), false);
     }
 

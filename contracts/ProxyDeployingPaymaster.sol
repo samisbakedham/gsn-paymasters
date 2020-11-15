@@ -9,7 +9,9 @@ import "./TokenPaymaster.sol";
 contract ProxyDeployingPaymaster is TokenPaymaster {
     using Address for address;
 
-    string public override versionPaymaster = "2.0.0-beta.1+opengsn.proxydeploying.ipaymaster";
+    function versionPaymaster() public view override returns (string memory) {
+        return "2.0.0-beta.1+opengsn.proxydeploying.ipaymaster";
+    }
 
     ProxyFactory public proxyFactory;
 
@@ -20,7 +22,8 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
     function getPayer(GsnTypes.RelayRequest calldata relayRequest) public override virtual view returns (address) {
         // TODO: if (rr.paymasterData != '') return address(rr.paymasterData)
         //  this is to support pre-existing proxies/proxies with changed owner
-        return proxyFactory.calculateAddress(relayRequest.request.from);
+        //        return proxyFactory.calculateAddress(relayRequest.request.from);
+        return relayRequest.request.to;
     }
 
     function preRelayedCall(
@@ -35,21 +38,53 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
     returns (bytes memory, bool revertOnRecipientRevert) {
         (relayRequest, signature, approvalData, maxPossibleGas);
         (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);
-        (address payer, uint256 tokenPrecharge) = _calculatePreCharge(token, uniswap, relayRequest, maxPossibleGas);
-        if (!payer.isContract()) {
-            deployProxy(relayRequest.request.from);
+        (address payer, uint256 tokenPrecharge) = _calculatePreCharge(uniswap, relayRequest, maxPossibleGas);
+        if (!tokenTransferFrom(token, payer, address(this), tokenPrecharge)) {
+            require(!payer.isContract(), "unable to pre-charge account");
+            //failed to pre-charge. attempt to deploy:
+            uint salt = 0;
+            if (relayRequest.relayData.paymasterData.length == 32) {
+                salt = abi.decode(relayRequest.relayData.paymasterData, (uint));
+            }
+            address addr = address(deployProxy(relayRequest.request.from, salt));
+            require(addr == relayRequest.request.to, "wrong create2 address");
+            require(tokenTransferFrom(token, payer, address(this), tokenPrecharge), "unable to deploy and pre-charge");
         }
-        token.transferFrom(payer, address(this), tokenPrecharge);
-        //solhint-disable-next-line
-        uniswap.tokenToEthSwapOutput(relayRequest.request.value, uint256(-1), block.timestamp+60*15);
-        payable(relayRequest.relayData.forwarder).transfer(relayRequest.request.value);
+        if (relayRequest.request.value != 0) {
+            //solhint-disable-next-line
+            uniswap.tokenToEthSwapOutput(relayRequest.request.value, uint256(- 1), block.timestamp + 60 * 15);
+            payable(relayRequest.relayData.forwarder).transfer(relayRequest.request.value);
+        }
         return (abi.encode(payer, relayRequest.request.from, tokenPrecharge, relayRequest.request.value, relayRequest.relayData.forwarder, token, uniswap), false);
     }
 
-    function deployProxy(address owner) public returns (ProxyIdentity) {
-        ProxyIdentity proxy = proxyFactory.deployProxy(owner);
-        proxy.initialize(address(trustedForwarder), tokens);
+    //there are 2 profiles of transferFrom:
+    // return true/false on success/failure
+    // no return value, and revert on failure.
+    // this method accept both:
+    //  - revert returns "false"
+    //  - if return value length is nonzero, this it is assumed to be boolean.
+    //  - zero-length return value is assumed to be "true"
+    function tokenTransferFrom(IERC20 token, address from, address to, uint value) private returns(bool) {
+        (bool success, bytes memory ret) = address(token).call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
+        if (success) {
+            success = ret.length==0 || abi.decode(ret, (bool));
+        }
+        return success;
     }
+
+    function deployProxy(address owner, uint salt) public returns (ProxyIdentity) {
+        ProxyIdentity proxy = proxyFactory.deployProxy(owner, salt);
+        require(this.calculateAddress(owner, salt) == address (proxy), "FATAL: wrong create2 address");
+        proxy.initialize(address(trustedForwarder), tokens);
+        return proxy;
+    }
+
+    function calculateAddress(address owner, uint salt) view external returns (address) {
+        return proxyFactory.calculateAddress(owner, salt);
+    }
+
+
 
     function postRelayedCall(
         bytes calldata context,

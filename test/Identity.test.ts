@@ -2,10 +2,12 @@ import { expectRevert } from '@openzeppelin/test-helpers'
 
 import {
   TestCounterInstance,
-  ProxyIdentityInstance
+  ProxyIdentityInstance, ProxyFactoryInstance
 } from '../types/truffle-contracts'
+import {ProxyFactory} from "@openzeppelin/upgrades";
 
 const ProxyIdentity = artifacts.require('ProxyIdentity')
+const ProxyFactory = artifacts.require('ProxyFactory')
 const Counter = artifacts.require('TestCounter')
 
 const OPERATION_CALL = 0
@@ -13,11 +15,19 @@ const OPERATION_CALL = 0
 contract('ProxyIdentity', function (accounts) {
   let identity: ProxyIdentityInstance
   let counter: TestCounterInstance
+  let factory: ProxyFactoryInstance
 
+  let saltCounter=0
+  before( 'init factory', async()=>{
+    factory = await ProxyFactory.new()
+  })
   beforeEach(async function () {
     // Deploy contracts
     counter = await Counter.new()
-    identity = await ProxyIdentity.new(accounts[0])
+    const ret = await factory.deployProxy(accounts[0],saltCounter++)
+    const addr = ret.logs[0].args.proxyAddress
+    // const addr = await factory.deployProxy.call(accounts[0])
+    identity = await ProxyIdentity.at(addr)
   })
 
   it('should allow the owner to call execute', async function () {

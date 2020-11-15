@@ -34,7 +34,7 @@ const StakeManager = artifacts.require('StakeManager')
 const Penalizer = artifacts.require('Penalizer')
 const TestProxy = artifacts.require('TestProxy')
 
-export const transferErc20Error = 'ERC20: transfer amount exceeds allowance -- Reason given: ERC20: transfer amount exceeds allowance.'
+export const transferExceedsAllowanceErc20Error = /ERC20: transfer amount exceeds allowance/
 
 function mergeData (req: RelayRequest, override: Partial<RelayData>): RelayRequest {
   return {
@@ -155,19 +155,19 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       })
 
       it('should reject if not enough balance', async () => {
-        assert.equal(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), 'balance too low -- Reason given: balance too low.')
+        assert.match(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), /ERC20: transfer amount exceeds balance/)
       })
 
       it('should reject if unknown paymasterData', async () => {
         const req = mergeData(relayRequest, { paymasterData: '0x1234' })
         const signature = await getEip712Signature(web3, new TypedRequestData(1, forwarder.address, req))
-        assert.equal(await revertReason(testHub.callPreRC(req, signature, '0x', 1e6)), 'invalid uniswap address in paymasterData -- Reason given: invalid uniswap address in paymasterData.')
+        assert.match(await revertReason(testHub.callPreRC(req, signature, '0x', 1e6)), /invalid uniswap address in paymasterData/)
       })
 
       it('should reject if unsupported uniswap in paymasterData', async () => {
         const req = mergeData(relayRequest, { paymasterData: web3.eth.abi.encodeParameter('address', nonUniswap) })
         const signature = await getEip712Signature(web3, new TypedRequestData(1, forwarder.address, req))
-        assert.equal(await revertReason(testHub.callPreRC(req, signature, '0x', 1e6)), 'unsupported token uniswap -- Reason given: unsupported token uniswap.')
+        assert.match(await revertReason(testHub.callPreRC(req, signature, '0x', 1e6)), /unsupported token uniswap/)
       })
     })
 
@@ -178,7 +178,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       })
 
       it('should reject if no token approval', async () => {
-        assert.include(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), transferErc20Error)
+        assert.match(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), transferExceedsAllowanceErc20Error)
       })
 
       context('with token approved for paymaster', function () {

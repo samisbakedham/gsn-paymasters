@@ -11,7 +11,7 @@ import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 import "./interfaces/IERC725.sol";
 
 contract ProxyIdentity is IERC725, BaseRelayRecipient, Initializable {
-    string public override versionRecipient = "2.0.0-beta.1+opengsn.erc725.irelayrecipient";
+    string public override versionRecipient = "2.0.3+opengsn.erc725.irelayrecipient";
 
     uint256 private constant OPERATION_CALL = 0;
     uint256 private constant OPERATION_CREATE = 1;
@@ -23,7 +23,12 @@ contract ProxyIdentity is IERC725, BaseRelayRecipient, Initializable {
     // solhint-disable-next-line no-empty-blocks
     receive () external payable {}
 
-    constructor(address _owner) public {
+    //only for creating template.
+    constructor(bytes3) public {
+    }
+
+    function initOwner(address _owner) external {
+        require(owner == address(0), "owner already initialized");
         owner = _owner;
     }
 
