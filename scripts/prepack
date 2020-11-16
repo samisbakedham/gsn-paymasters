@@ -6,7 +6,7 @@ rm -rf src/compiled/
 
 mkdir -p src/compiled/
 
-CONTRACTS="ProxyIdentity ProxyFactory HashcashDifficulty IForwarder"
+CONTRACTS="ProxyIdentity ProxyFactory HashcashDifficulty IForwarder IProxyDeployingPaymaster"
 
 BUILDFOLDER=./build/contracts
 OUTFOLDER=./src/compiled/

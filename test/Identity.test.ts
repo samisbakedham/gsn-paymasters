@@ -4,7 +4,6 @@ import {
   TestCounterInstance,
   ProxyIdentityInstance, ProxyFactoryInstance
 } from '../types/truffle-contracts'
-import {ProxyFactory} from "@openzeppelin/upgrades";
 
 const ProxyIdentity = artifacts.require('ProxyIdentity')
 const ProxyFactory = artifacts.require('ProxyFactory')
@@ -17,14 +16,14 @@ contract('ProxyIdentity', function (accounts) {
   let counter: TestCounterInstance
   let factory: ProxyFactoryInstance
 
-  let saltCounter=0
-  before( 'init factory', async()=>{
+  let saltCounter = 0
+  before('init factory', async () => {
     factory = await ProxyFactory.new()
   })
   beforeEach(async function () {
     // Deploy contracts
     counter = await Counter.new()
-    const ret = await factory.deployProxy(accounts[0],saltCounter++)
+    const ret = await factory.deployProxy(accounts[0], saltCounter++)
     const addr = ret.logs[0].args.proxyAddress
     // const addr = await factory.deployProxy.call(accounts[0])
     identity = await ProxyIdentity.at(addr)

@@ -11,8 +11,7 @@ import {
   TestCounterInstance,
   TestTokenInstance
 } from '../types/truffle-contracts'
-import ProxyRelayProvider from '../src/ProxyRelayProvider'
-import { GSNConfig } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
+import ProxyRelayProvider, { ProxyGSNConfig } from '../src/ProxyRelayProvider'
 
 const RelayHub = artifacts.require('RelayHub')
 const TestToken = artifacts.require('TestToken')
@@ -48,14 +47,15 @@ contract('ProxyRelayProvider', function (accounts) {
     await hub.depositFor(paymaster.address, {
       value: 1e18.toString()
     })
-    const gsnConfig: Partial<GSNConfig> = {
-      logLevel: 5,
+
+    const gsnConfig: Partial<ProxyGSNConfig> = {
+      logLevel: 'debug',
+      signerAddress: accounts[0],
       relayHubAddress,
       forwarderAddress,
       paymasterAddress: paymaster.address
     }
-    proxyRelayProvider = new ProxyRelayProvider(
-      proxyFactory.address,
+    proxyRelayProvider = await new ProxyRelayProvider(
       web3.currentProvider as HttpProvider,
       gsnConfig, {
         asyncPaymasterData: async () => {
@@ -63,33 +63,49 @@ contract('ProxyRelayProvider', function (accounts) {
           return abi.encodeParameters(['address'], [uniswap.address])
         }
       }
-    )
+    ).init()
   })
 
   context('#_ethSendTransaction()', function () {
     let counter: TestCounterInstance
     let gaslessAccount: AccountKeypair
     let proxyAddress: Address
+    let web3: Web3
 
     before(async function () {
       counter = await TestCounter.new()
       // @ts-expect-error
-      TestCounter.web3.setProvider(proxyRelayProvider)
-      gaslessAccount = proxyRelayProvider.newAccount()
-      proxyAddress = await proxyRelayProvider.calculateProxyAddress(gaslessAccount.address)
+      web3 = TestCounter.web3
+
+      web3.setProvider(proxyRelayProvider)
+      // gaslessAccount = proxyRelayProvider.newAccount()
+      gaslessAccount = { address: accounts[0], privateKey: Buffer.from('ignored') }
+
+      proxyAddress = await paymaster.calculateAddress(gaslessAccount.address, 0)
+
+      // const gotAccounts = await web3.eth.getAccounts()
+      //
+      // //make sure the calculated proxy address is reported in getAccounts()
+      // assert.include(gotAccounts, proxyAddress)
+      // //this is the same..
+      // assert.equal(gotAccounts[gotAccounts.length-1], proxyAddress)
 
       await token.mint(1e18.toString())
       await token.transfer(proxyAddress, 1e18.toString())
     })
 
-    it('should relay transparently', async function () {
+    it('should relay transparently and deploy proxy', async function () {
       const countBefore = await counter.count()
       assert.strictEqual(countBefore.toNumber(), 0)
 
+      const from = proxyAddress
+      console.log('using account: ', from)
+
       const tx1 = await counter.increment({
-        from: gaslessAccount.address,
+        from,
         gasPrice: 1
       })
+      console.log('ret=', tx1)
 
       await expectEvent.inTransaction(tx1.tx, ProxyFactory, 'ProxyDeployed', { proxyAddress })
 
@@ -97,7 +113,7 @@ contract('ProxyRelayProvider', function (accounts) {
       assert.strictEqual(countAfter1.toNumber(), 1)
 
       const tx2 = await counter.increment({
-        from: gaslessAccount.address,
+        from,
         gasPrice: 1
       })
       const countAfter2 = await counter.count()

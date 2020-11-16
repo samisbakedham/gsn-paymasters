@@ -23,10 +23,9 @@ import {
   ProxyDeployingPaymasterInstance,
   TestHubInstance,
   TestCounterInstance,
-  ProxyFactoryInstance, StakeManagerInstance, ProxyIdentityInstance
+  ProxyFactoryInstance, StakeManagerInstance
 } from '../types/truffle-contracts'
 import { RelayHubInstance } from '@opengsn/gsn/dist/types/truffle-contracts'
-import { transferExceedsAllowanceErc20Error } from './TokenPaymaster.test'
 import { GSNConfig } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
 
 const RelayHub = artifacts.require('RelayHub')
@@ -51,7 +50,6 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
   let token: TestTokenInstance
   let relayRequest: RelayRequest
   let recipientAddress: Address
-  let recipient: ProxyIdentityInstance
   let testProxyTarget: TestProxyTargetInstance
   let stakeManager: StakeManagerInstance
   let signature: PrefixedHexString
@@ -82,8 +80,8 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
     forwarder = await Forwarder.new({ gas: 1e7 })
     // recipient = await TestProxy.new(forwarder.address, { gas: 1e7 })
 
-    recipientAddress = await paymaster.calculateAddress(senderAddress,0)
-    //TODO: with truffle, we can't create a "future" instance, since it wasn't deployed yet...
+    recipientAddress = await paymaster.calculateAddress(senderAddress, 0)
+    // TODO: with truffle, we can't create a "future" instance, since it wasn't deployed yet...
     // recipient = await ProxyIdentity.at(recipientAddress)
     testProxyTarget = await TestProxyTarget.new()
     stakeManager = await StakeManager.new()
@@ -103,10 +101,10 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
     await forwarder.registerRequestType(GsnRequestType.typeName, GsnRequestType.typeSuffix)
     await forwarder.registerDomainSeparator(GsnDomainSeparatorType.name, GsnDomainSeparatorType.version)
     await paymaster.setTrustedForwarder(forwarder.address)
-    await paymaster.deployProxy(senderAddress,1234)
-    //TODO: no real need to create a proxy just to have the method to encodeAbi...
+    await paymaster.deployProxy(senderAddress, 1234)
+    // TODO: no real need to create a proxy just to have the method to encodeAbi...
     // better construct web3.Contract (which works even if target is not deployed)
-    const unusedProxy = await ProxyIdentity.at(await paymaster.calculateAddress(senderAddress,1234))
+    const unusedProxy = await ProxyIdentity.at(await paymaster.calculateAddress(senderAddress, 1234))
 
     relayRequest = {
       request: {
@@ -115,8 +113,8 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
         nonce: '0',
         value: '0',
         gas: 1e6.toString(),
-        data: unusedProxy.contract.methods.execute(0,testProxyTarget.address, 0,
-            testProxyTarget.contract.methods.test().encodeABI()).encodeABI()
+        data: unusedProxy.contract.methods.execute(0, testProxyTarget.address, 0,
+          testProxyTarget.contract.methods.test().encodeABI()).encodeABI()
       },
       relayData: {
         ...gasData,
@@ -173,7 +171,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
           assert.equal((await web3.eth.getCode(recipientAddress)).length, 2)
           await testHub.callPreRC(relayRequest, signature, '0x', 1e6)
         } finally {
-          revert(id)
+          await revert(id)
         }
       })
 
@@ -188,16 +186,16 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
             relayData: relayRequest.relayData
           }
           const sig = await getEip712Signature(
-              web3,
-              new TypedRequestData(
-                  defaultEnvironment.chainId,
-                  forwarder.address,
-                  req
-              )
+            web3,
+            new TypedRequestData(
+              defaultEnvironment.chainId,
+              forwarder.address,
+              req
+            )
           )
           assert.match(await revertReason(testHub.callPreRC(req, sig, '0x', 1e6)), /wrong create2 address/)
         } finally {
-          revert(id)
+          await revert(id)
         }
       })
 
@@ -208,7 +206,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
           assert.equal((await web3.eth.getCode(recipientAddress)).length, 2)
           await testHub.callPreRC(relayRequest, signature, '0x', 1e6)
         } finally {
-          revert(id)
+          await revert(id)
         }
       })
 
@@ -217,7 +215,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
 
         before(async function () {
           id = (await snapshot()).result
-          await paymaster.deployProxy(senderAddress,0)
+          await paymaster.deployProxy(senderAddress, 0)
           await registerAsRelayServer(stakeManager, relayWorker, senderAddress, relayHub)
           await relayHub.depositFor(paymaster.address, { value: 1e18.toString() })
         })
@@ -398,7 +396,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
       await assertDeployed(proxyAddress, false)
       proxy = new web3.eth.Contract(proxyIdentityArtifact.abi, proxyAddress)
       const gsnConfig: Partial<GSNConfig> = {
-        logLevel: 5,
+        logLevel: 'error',
         relayHubAddress: testEnv.deploymentResult.relayHubAddress,
         forwarderAddress: testEnv.deploymentResult.forwarderAddress,
         paymasterAddress: paymaster.address

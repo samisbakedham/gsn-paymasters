@@ -6,11 +6,15 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "./ProxyFactory.sol";
 import "./TokenPaymaster.sol";
 
-contract ProxyDeployingPaymaster is TokenPaymaster {
+interface IProxyDeployingPaymaster {
+    function calculateAddress(address owner, uint salt) view external returns (address);
+}
+
+contract ProxyDeployingPaymaster is TokenPaymaster, IProxyDeployingPaymaster {
     using Address for address;
 
     function versionPaymaster() public view override returns (string memory) {
-        return "2.0.0-beta.1+opengsn.proxydeploying.ipaymaster";
+        return "2.0.3+opengsn.proxydeploying.ipaymaster";
     }
 
     ProxyFactory public proxyFactory;
@@ -43,8 +47,10 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
             require(!payer.isContract(), "unable to pre-charge account");
             //failed to pre-charge. attempt to deploy:
             uint salt = 0;
+
+            //TODO: using high-bits for salt, since TokenPaymaster uses it for token address
             if (relayRequest.relayData.paymasterData.length == 32) {
-                salt = abi.decode(relayRequest.relayData.paymasterData, (uint));
+                salt = abi.decode(relayRequest.relayData.paymasterData, (uint)) >> 160;
             }
             address addr = address(deployProxy(relayRequest.request.from, salt));
             require(addr == relayRequest.request.to, "wrong create2 address");
@@ -80,7 +86,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
         return proxy;
     }
 
-    function calculateAddress(address owner, uint salt) view external returns (address) {
+    function calculateAddress(address owner, uint salt) view override external returns (address) {
         return proxyFactory.calculateAddress(owner, salt);
     }
 
