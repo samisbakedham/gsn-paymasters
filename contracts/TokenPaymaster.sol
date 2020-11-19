@@ -10,7 +10,7 @@ import "@opengsn/gsn/contracts/forwarder/IForwarder.sol";
 import "@opengsn/gsn/contracts/BasePaymaster.sol";
 
 import "./interfaces/IUniswap.sol";
-
+import "@nomiclabs/buidler/console.sol";
 /**
  * A Token-based paymaster.
  * - each request is paid for by the caller.
@@ -71,7 +71,13 @@ contract TokenPaymaster is BasePaymaster {
         }
 
         require(paymasterData.length==32, "invalid uniswap address in paymasterData");
-        uniswap = abi.decode(paymasterData, (IUniswap));
+        (uint data) = abi.decode(paymasterData, (uint ));
+        uniswap = IUniswap(address(uint160(data)));
+
+        if (uniswap==IUniswap(0)) {
+            return (tokens[0], uniswaps[0]);
+        }
+        console.log("=== %s", uint (uint160(address (uniswap) )));
         require(supportedUniswaps[uniswap], "unsupported token uniswap");
         token = IERC20(uniswap.tokenAddress());
     }
@@ -103,7 +109,7 @@ contract TokenPaymaster is BasePaymaster {
         (relayRequest, signature, approvalData, maxPossibleGas);
         (IERC20 token, IUniswap uniswap) = _getToken(relayRequest.relayData.paymasterData);
         (address payer, uint256 tokenPrecharge) = _calculatePreCharge(uniswap, relayRequest, maxPossibleGas);
-        require(token.transferFrom(payer, address(this), tokenPrecharge), 'cannot precharge');
+        require(token.transferFrom(payer, address(this), tokenPrecharge), "cannot precharge");
         return (abi.encode(payer, tokenPrecharge, token, uniswap), false);
     }
 

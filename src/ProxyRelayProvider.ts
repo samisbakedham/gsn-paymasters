@@ -44,12 +44,12 @@ export default class ProxyRelayProvider extends RelayProvider {
     this.proxyContract = new this.relayClient.contractInteractor.web3.eth.Contract(ProxyIdentityArtifact.abi, this.config.paymasterAddress)
   }
 
-  async init (): Promise<this> {
-    await super.init()
-    await this.udpateProxyAddresses()
-
-    return this
-  }
+  // async init (): Promise<this> {
+  //   await super.init()
+  //   await this.udpateProxyAddresses()
+  //
+  //   return this
+  // }
 
   proxyToSigner: { [proxy: string]: Address } = {}
 

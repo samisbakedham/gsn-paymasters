@@ -72,6 +72,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster, IProxyDeployingPaymaster {
     //  - if return value length is nonzero, this it is assumed to be boolean.
     //  - zero-length return value is assumed to be "true"
     function tokenTransferFrom(IERC20 token, address from, address to, uint value) private returns(bool) {
+        // solhint-disable avoid-low-level-calls
         (bool success, bytes memory ret) = address(token).call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
         if (success) {
             success = ret.length==0 || abi.decode(ret, (bool));

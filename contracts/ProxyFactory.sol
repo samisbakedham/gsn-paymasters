@@ -9,7 +9,7 @@ import "./ProxyIdentity.sol";
 contract ProxyFactory is CloneFactory {
     using Address for address;
 
-    address templateFactory;
+    address public templateFactory;
 
     constructor() public {
         templateFactory = address(new ProxyIdentity(bytes3("abc")));

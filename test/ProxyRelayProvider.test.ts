@@ -49,13 +49,12 @@ contract('ProxyRelayProvider', function (accounts) {
     })
 
     const gsnConfig: Partial<ProxyGSNConfig> = {
-      logLevel: 'debug',
       signerAddress: accounts[0],
       relayHubAddress,
       forwarderAddress,
       paymasterAddress: paymaster.address
     }
-    proxyRelayProvider = await new ProxyRelayProvider(
+    proxyRelayProvider = new ProxyRelayProvider(
       web3.currentProvider as HttpProvider,
       gsnConfig, {
         asyncPaymasterData: async () => {
@@ -63,7 +62,8 @@ contract('ProxyRelayProvider', function (accounts) {
           return abi.encodeParameters(['address'], [uniswap.address])
         }
       }
-    ).init()
+    )
+    await proxyRelayProvider.udpateProxyAddresses()
   })
 
   context('#_ethSendTransaction()', function () {

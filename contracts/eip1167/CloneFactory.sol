@@ -1,5 +1,12 @@
-pragma solidity >=0.4.23;
+pragma solidity >=0.6.2;
 //SPDX-License-Identifier: MIT
+//copied from: https://github.com/optionality/clone-factory/blob/master/contracts/CloneFactory.sol,
+// the reference implementation of eip1167, with additions:
+//  - createClone2() - equivalent to createClone, but uses create2
+//  - getClone2Address() - return the address createClone2 _would_ return
+//    (note that createClone2 returns that address too, but only if the contract doesn't exist. If it already
+//    exists, it returns zero)
+
 /*
 The MIT License (MIT)
 
@@ -55,8 +62,7 @@ contract CloneFactory {
 
   //calculate the create2 address to be returned by createClone2
   // (note that createClone2 returns the same address on successful creation, but returns
-  // "ZeroAddress" in case the target contract already exists.
-  // It returns ZEROADDR in case the target contract is already deployed
+  // "Zero Address" in case the target contract already exists.
   function getClone2Address(address target, bytes32 salt) view internal returns (address) {
     bytes20 targetBytes = bytes20(target);
     bytes memory cloneBytes = new bytes(0x37);

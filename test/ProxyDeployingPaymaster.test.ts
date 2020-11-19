@@ -120,7 +120,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
         ...gasData,
         relayWorker,
         paymaster: paymaster.address,
-        paymasterData: '0x',
+        paymasterData: '0x'.padEnd(66, '0'),
         clientId: '2',
         forwarder: forwarder.address
       }
@@ -202,9 +202,25 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
       it('should accept if payer is an identity that was not deployed yet, and use paymasterData as salt', async function () {
         const id = (await snapshot()).result
         try {
-          const newRecipientAddress = paymaster.calculateAddress(senderAddress, 2)
-          assert.equal((await web3.eth.getCode(recipientAddress)).length, 2)
-          await testHub.callPreRC(relayRequest, signature, '0x', 1e6)
+          const newRecipientAddress = await paymaster.calculateAddress(senderAddress, 2)
+          assert.equal((await web3.eth.getCode(newRecipientAddress)).length, 2)
+          const req = {
+            request: relayRequest.request,
+            relayData: { ...relayRequest.relayData, paymasterData: '0x' + ('20000' + '0'.repeat(40)).padStart(64, '0') }
+          }
+          console.log('pmdata=', req.relayData.paymasterData.length)
+          const sig = await getEip712Signature(
+            web3,
+            new TypedRequestData(
+              defaultEnvironment.chainId,
+              forwarder.address,
+              req
+            )
+          )
+          await testHub.callPreRC(req, sig, '0x', 1e6)
+
+          // validate it was deployed
+          assert.notEqual((await web3.eth.getCode(newRecipientAddress)).length, 2)
         } finally {
           await revert(id)
         }
@@ -369,24 +385,6 @@ contract('ProxyDeployingPaymaster', ([senderAddress, anotherSender, relayWorker]
         value: 1e18.toString()
       })
       // get some tokens for our future proxy. Proxy address only depends on the addresses sender, paymaster and token.
-      const relayRequest: RelayRequest = {
-        request: {
-          to: constants.ZERO_ADDRESS,
-          from: senderAddress,
-          nonce: '0',
-          value: '0',
-          data: '0x',
-          gas: 1e6.toString()
-        },
-        relayData: {
-          ...gasData,
-          relayWorker,
-          paymaster: paymaster.address,
-          paymasterData: '0x',
-          clientId: '2',
-          forwarder: testEnv.deploymentResult.forwarderAddress
-        }
-      }
       proxyAddress = await paymaster.calculateAddress(senderAddress, 0)
       await token.mint(1e18.toString())
       await token.transfer(proxyAddress, 1e18.toString())

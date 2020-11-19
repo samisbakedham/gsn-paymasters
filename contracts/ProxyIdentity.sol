@@ -24,6 +24,7 @@ contract ProxyIdentity is IERC725, BaseRelayRecipient, Initializable {
     receive () external payable {}
 
     //only for creating template.
+    /* solhint-disable no-empty-blocks */
     constructor(bytes3) public {
     }
 
