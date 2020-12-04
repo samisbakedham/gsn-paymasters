@@ -69,6 +69,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
     gasPrice: '1',
     gasLimit: 1e6.toString()
   }
+
   before(async function () {
     uniswap = await TestUniswap.new(tokensPerEther, 1, {
       value: (5e18).toString(),
@@ -91,7 +92,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       defaultEnvironment.relayHubConfiguration.minimumUnstakeDelay,
       defaultEnvironment.relayHubConfiguration.minimumStake,
       { gas: 10000000 })
-    relayHub = await deployHub(stakeManager.address)
+    relayHub = await deployHub(stakeManager.address, constants.ZERO_ADDRESS)
     await paymaster.setRelayHub(relayHub.address)
     await forwarder.registerRequestType(GsnRequestType.typeName, GsnRequestType.typeSuffix)
     await forwarder.registerDomainSeparator(GsnDomainSeparatorType.name, GsnDomainSeparatorType.version)
@@ -126,13 +127,17 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
     )
   })
 
+  after(async function () {
+    await GsnTestEnvironment.stopGsn()
+  })
+
   context('#preRelayedCall()', function () {
     before(async function () {
       await paymaster.setRelayHub(testHub.address)
     })
 
     it('should reject if not enough balance', async () => {
-      assert.equal(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), 'balance too low -- Reason given: balance too low.')
+      assert.match(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), /ERC20: transfer amount exceeds balance/)
     })
 
     context('with token balance at identity address', function () {
@@ -152,7 +157,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
             relayRequestX
           )
         )
-        assert.equal(await revertReason(testHub.callPreRC(relayRequestX, signatureX, '0x', 1e6)), 'balance too low -- Reason given: balance too low.')
+        assert.match(await revertReason(testHub.callPreRC(relayRequestX, signatureX, '0x', 1e6)), /ERC20: transfer amount exceeds balance/)
       })
 
       context('with identity deployed', function () {
@@ -307,7 +312,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       const proxyIdentityArtifact = require('../build/contracts/ProxyIdentity')
       // start the GSN
       const host = (web3.currentProvider as HttpProvider).host
-      const testEnv = await GsnTestEnvironment.startGsn(host, false)
+      const testEnv = await GsnTestEnvironment.startGsn(host, true)
       // deposit Ether to the RelayHub for paymaster
       // need to convert to any because of namespace collision
       hub = (await RelayHub.at(testEnv.deploymentResult.relayHubAddress)) as any as RelayHubInstance
@@ -345,14 +350,14 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       await assertDeployed(proxyAddress, false)
       proxy = new web3.eth.Contract(proxyIdentityArtifact.abi, proxyAddress)
       const gsnConfig: Partial<GSNConfig> = {
-        logLevel: 5,
+        logLevel: 'error',
         relayHubAddress: testEnv.deploymentResult.relayHubAddress,
         forwarderAddress: testEnv.deploymentResult.forwarderAddress,
         paymasterAddress: paymaster.address
       }
       encodedCall = counter.contract.methods.increment().encodeABI()
       // @ts-expect-error
-      const relayProvider = new RelayProvider(web3.currentProvider, gsnConfig)
+      const relayProvider = await new RelayProvider(web3.currentProvider, gsnConfig).init()
       proxy.setProvider(relayProvider)
     })
 

@@ -34,7 +34,7 @@ contract('HashcashPaymaster', ([from]) => {
     await web3.eth.sendTransaction({ from, to: pm.address, value: 1e18 })
 
     gsnConfig = {
-      logLevel: 5,
+      logLevel: 'error',
       relayHubAddress,
       forwarderAddress,
       paymasterAddress: pm.address
@@ -43,6 +43,7 @@ contract('HashcashPaymaster', ([from]) => {
 
   it('should fail to send without approvalData', async () => {
     const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig)
+    await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
     await expectRevert(s.something(), 'no hash in approvalData')
@@ -52,6 +53,7 @@ contract('HashcashPaymaster', ([from]) => {
     const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
       asyncApprovalData: async () => '0x'.padEnd(2 + 64 * 2, '0')
     })
+    await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
 
@@ -62,6 +64,7 @@ contract('HashcashPaymaster', ([from]) => {
     const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
       asyncApprovalData: createHashcashAsyncApproval(1)
     })
+    await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
 
@@ -73,6 +76,7 @@ contract('HashcashPaymaster', ([from]) => {
     const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
       asyncApprovalData: createHashcashAsyncApproval(15)
     })
+    await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
 
@@ -99,10 +103,11 @@ contract('HashcashPaymaster', ([from]) => {
     console.log('approval=', approval)
     const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
       asyncApprovalData: async (req: RelayRequest) => {
-        console.log('req=', req)
+        // console.log('req=', req)
         return approval!
       }
     })
+    await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
 
@@ -119,6 +124,7 @@ contract('HashcashPaymaster', ([from]) => {
         return saveret
       }
     })
+    await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
     await s.something()
@@ -126,6 +132,7 @@ contract('HashcashPaymaster', ([from]) => {
     const p1 = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
       asyncApprovalData: async (req: RelayRequest) => await Promise.resolve(saveret)
     })
+    await p1.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p1)
     return expectRevert(s.something(), 'wrong hash')

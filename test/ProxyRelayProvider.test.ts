@@ -41,7 +41,7 @@ contract('ProxyRelayProvider', function (accounts) {
         relayHubAddress,
         forwarderAddress
       }
-    } = await GsnTestEnvironment.startGsn('localhost', false)
+    } = await GsnTestEnvironment.startGsn('localhost', true)
     const hub = await RelayHub.at(relayHubAddress)
     await paymaster.setRelayHub(hub.address)
     await paymaster.setTrustedForwarder(forwarderAddress)
@@ -49,12 +49,12 @@ contract('ProxyRelayProvider', function (accounts) {
       value: 1e18.toString()
     })
     const gsnConfig: Partial<GSNConfig> = {
-      logLevel: 5,
+      logLevel: 'error',
       relayHubAddress,
       forwarderAddress,
       paymasterAddress: paymaster.address
     }
-    proxyRelayProvider = new ProxyRelayProvider(
+    proxyRelayProvider = await new ProxyRelayProvider(
       proxyFactory.address,
       web3.currentProvider as HttpProvider,
       gsnConfig, {
@@ -63,7 +63,7 @@ contract('ProxyRelayProvider', function (accounts) {
           return abi.encodeParameters(['address'], [uniswap.address])
         }
       }
-    )
+    ).init()
   })
 
   context('#_ethSendTransaction()', function () {

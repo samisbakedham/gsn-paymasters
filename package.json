@@ -1,10 +1,10 @@
 {
   "name": "@opengsn/paymasters",
-  "version": "2.0.1",
+  "version": "2.0.3",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@opengsn/gsn": "^2.0.1",
+    "@opengsn/gsn": "2.0.3",
     "@openzeppelin/contracts": "3.1.0",
     "@openzeppelin/upgrades": "2.8.0",
     "@types/source-map-support": "^0.5.1",
@@ -43,9 +43,9 @@
   "scripts": {
     "generate": "rm -rf ./build/contracts && npx truffle compile && typechain --target trufflehotfix './build/contracts/**/*.json'",
     "ci": "yarn lint && yarn prepack && yarn test",
-    "test": "run-with-testrpc --hardfork 'istanbul' --gasLimit 100000000 'truffle test'",
+    "test": "run-with-testrpc --chainId 1337 --hardfork 'istanbul' --gasLimit 100000000 'truffle test'",
     "truffle-test": "truffle test",
-    "ganache-with-gsn": "run-with-testrpc --gasLimit 100000000 'gsn start'",
+    "ganache-with-gsn": "run-with-testrpc --chainId 1337 --gasLimit 100000000 'gsn start'",
     "tsc": "tsc --noEmit",
     "prepack": "./scripts/prepack",
     "truffle-compile": "rm -rf build/ && truffle compile",

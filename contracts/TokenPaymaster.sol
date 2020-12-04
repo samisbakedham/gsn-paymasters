@@ -22,7 +22,7 @@ contract TokenPaymaster is BasePaymaster {
     using SafeMath for uint256;
 
     function versionPaymaster() external override virtual view returns (string memory){
-        return "2.0.0-beta.1+opengsn.token.ipaymaster";
+        return "2.0.0+opengsn.token.ipaymaster";
     }
 
 
@@ -84,11 +84,11 @@ contract TokenPaymaster is BasePaymaster {
     internal
     view
     returns (address payer, uint256 tokenPreCharge) {
+        (token);
         payer = this.getPayer(relayRequest);
         uint ethMaxCharge = relayHub.calculateCharge(maxPossibleGas, relayRequest.relayData);
         ethMaxCharge += relayRequest.request.value;
         tokenPreCharge = uniswap.getTokenToEthOutputPrice(ethMaxCharge);
-        require(tokenPreCharge <= token.balanceOf(payer), "balance too low");
     }
 
     function preRelayedCall(

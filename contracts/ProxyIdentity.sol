@@ -11,7 +11,7 @@ import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 import "./interfaces/IERC725.sol";
 
 contract ProxyIdentity is IERC725, BaseRelayRecipient, Initializable {
-    string public override versionRecipient = "2.0.0-beta.1+opengsn.erc725.irelayrecipient";
+    string public override versionRecipient = "2.0.0+opengsn.erc725.irelayrecipient";
 
     uint256 private constant OPERATION_CALL = 0;
     uint256 private constant OPERATION_CREATE = 1;

@@ -94,7 +94,7 @@ contract('VerifyingPaymaster', ([from]) => {
       await web3.eth.sendTransaction({ from, to: pm.address, value: 1e18 })
 
       gsnConfig = {
-        logLevel: 5,
+        logLevel: 'error',
         relayHubAddress,
         forwarderAddress,
         paymasterAddress: pm.address

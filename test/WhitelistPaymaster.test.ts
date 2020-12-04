@@ -35,7 +35,7 @@ contract('WhitelistPaymaster', ([from, another]) => {
     console.log('s', s.address)
     console.log('s1', s1.address)
     gsnConfig = {
-      logLevel: 5,
+      logLevel: 'error',
       relayHubAddress,
       forwarderAddress,
       paymasterAddress: pm.address

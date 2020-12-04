@@ -23,6 +23,8 @@ import {
 import { registerAsRelayServer, revertReason } from './TestUtils'
 import RelayData from '@opengsn/gsn/dist/src/common/EIP712/RelayData'
 import { RelayHubInstance } from '@opengsn/gsn/dist/types/truffle-contracts'
+import Web3 from 'web3'
+import { GsnTestEnvironment } from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
 
 const TestHub = artifacts.require('TestHub')
 const TokenPaymaster = artifacts.require('TokenPaymaster')
@@ -136,6 +138,10 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
     )
   })
 
+  after(async function () {
+    await GsnTestEnvironment.stopGsn()
+  })
+
   context('#preRelayedCall', function () {
     let testHub: TestHubInstance
     context('revert reasons', function () {
@@ -155,7 +161,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       })
 
       it('should reject if not enough balance', async () => {
-        assert.equal(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), 'balance too low -- Reason given: balance too low.')
+        assert.match(await revertReason(testHub.callPreRC(relayRequest, signature, '0x', 1e6)), /ERC20: transfer amount exceeds balance/)
       })
 
       it('should reject if unknown paymasterData', async () => {
@@ -241,7 +247,10 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       _relayRequest.relayData.pctRelayFee = '0'
       _relayRequest.relayData.baseRelayFee = '0'
 
-      const chainId = defaultEnvironment.chainId
+      // note that by default, ganache is buggy: getChainId returns 1337 but on-chain "chainid" returns 1.
+      // only if we pass it "--chainId 1337" the above 2 return the same value...
+      const chainId = await new Web3(web3.currentProvider as any).eth.getChainId()
+
       const dataToSign = new TypedRequestData(
         chainId,
         forwarder.address,
@@ -261,6 +270,8 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
         gas: externalGasLimit
       })
 
+      const rejected = ret.logs.find(log => log.event === 'TransactionRejectedByPaymaster')
+      assert.ok(rejected == null, `Rejected with reason: ${decodeRevertReason(rejected?.args.reason) as string}`)
       const relayed = ret.logs.find(log => log.event === 'TransactionRelayed')
       // @ts-expect-error
       const events = await paymaster.getPastEvents()

@@ -21,7 +21,7 @@ interface HashcashDifficulty {
 contract HashcashPaymaster is AcceptEverythingPaymaster, HashcashDifficulty {
 
     function versionPaymaster() external view override virtual returns (string memory){
-        return "2.0.0-beta.1+opengsn.hashcash.ipaymaster";
+        return "2.0.0+opengsn.hashcash.ipaymaster";
     }
 
     uint8 public override difficulty;
