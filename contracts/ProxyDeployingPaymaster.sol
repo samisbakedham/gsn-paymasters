@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.6.2;
+pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -9,7 +9,7 @@ import "./TokenPaymaster.sol";
 contract ProxyDeployingPaymaster is TokenPaymaster {
     using Address for address;
 
-    string public override versionPaymaster = "2.0.0+opengsn.proxydeploying.ipaymaster";
+    string public override versionPaymaster = "2.2.0+opengsn.proxydeploying.ipaymaster";
 
     ProxyFactory public proxyFactory;
 
@@ -63,18 +63,20 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
 
     // TODO: calculate precise values for these params
     uint256 constant private PRE_RELAYED_CALL_GAS_LIMIT_OVERRIDE = 2000000;
+    uint256 constant public PAYMASTER_ACCEPTANCE_BUDGET_OVERRIDE = PRE_RELAYED_CALL_GAS_LIMIT_OVERRIDE + FORWARDER_HUB_OVERHEAD;
 
-    function getGasLimits()
+    function getGasAndDataLimits()
     public
     override
     view
     returns (
-        GasLimits memory limits
+        GasAndDataLimits memory limits
     ) {
-        return GasLimits(
-            PAYMASTER_ACCEPTANCE_BUDGET,
+        return GasAndDataLimits(
+            PAYMASTER_ACCEPTANCE_BUDGET_OVERRIDE,
             PRE_RELAYED_CALL_GAS_LIMIT_OVERRIDE,
-            POST_RELAYED_CALL_GAS_LIMIT
+            POST_RELAYED_CALL_GAS_LIMIT,
+            CALLDATA_SIZE_LIMIT
         );
     }
 }

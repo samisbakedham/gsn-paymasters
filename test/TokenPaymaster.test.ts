@@ -8,7 +8,6 @@ import TypedRequestData, {
 import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import { defaultEnvironment } from '@opengsn/gsn/dist/src/common/Environments'
 import { decodeRevertReason, getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
-import { deployHub } from '@opengsn/gsn/dist/test/TestUtils'
 import { PrefixedHexString } from 'ethereumjs-tx'
 
 import {
@@ -25,6 +24,7 @@ import RelayData from '@opengsn/gsn/dist/src/common/EIP712/RelayData'
 import { RelayHubInstance } from '@opengsn/gsn/dist/types/truffle-contracts'
 import Web3 from 'web3'
 import { GsnTestEnvironment } from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
+import { deployHub } from './ProxyDeployingPaymaster.test'
 
 const TestHub = artifacts.require('TestHub')
 const TokenPaymaster = artifacts.require('TokenPaymaster')
@@ -45,6 +45,7 @@ function mergeData (req: RelayRequest, override: Partial<RelayData>): RelayReque
   }
 }
 
+// TODO: this test recreates GSN manually. Use GSN tools to do it instead.
 contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
   let paymaster: TokenPaymasterInstance
   let uniswap: TestUniswapInstance
@@ -70,6 +71,8 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       defaultEnvironment.relayHubConfiguration.maximumRecipientDeposit,
       defaultEnvironment.relayHubConfiguration.minimumUnstakeDelay,
       defaultEnvironment.relayHubConfiguration.minimumStake,
+      defaultEnvironment.relayHubConfiguration.dataGasCostPerByte,
+      defaultEnvironment.relayHubConfiguration.externalCallDataCostOverhead,
       { gas: 10000000 })
     await testpaymaster.transferOwnership(calc.address)
     // put some tokens in paymaster so it can calculate postRelayedCall gas usage:
@@ -86,8 +89,8 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       value: (5e18).toString(),
       gas: 10000000
     })
-    stakeManager = await StakeManager.new()
-    penalizer = await Penalizer.new()
+    stakeManager = await StakeManager.new(defaultEnvironment.maxUnstakeDelay)
+    penalizer = await Penalizer.new(defaultEnvironment.penalizerConfiguration.penalizeBlockDelay, defaultEnvironment.penalizerConfiguration.penalizeBlockExpiration)
     hub = await deployHub(stakeManager.address, penalizer.address)
     token = await TestToken.at(await uniswap.tokenAddress())
 
@@ -120,6 +123,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
         data: recipient.contract.methods.test().encodeABI(),
         nonce: '0',
         value: '0',
+        validUntil: '0',
         from,
         to: recipient.address,
         gas: 1e6.toString()
@@ -156,6 +160,8 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
           defaultEnvironment.relayHubConfiguration.maximumRecipientDeposit,
           defaultEnvironment.relayHubConfiguration.minimumUnstakeDelay,
           defaultEnvironment.relayHubConfiguration.minimumStake,
+          defaultEnvironment.relayHubConfiguration.dataGasCostPerByte,
+          defaultEnvironment.relayHubConfiguration.externalCallDataCostOverhead,
           { gas: 10000000 })
         await paymaster.setRelayHub(testHub.address)
       })
@@ -232,7 +238,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       )
       const gas = 5000000
       const relayCall: any = await hub.relayCall.call(1e06, relayRequest, wrongSignature, '0x', gas, { from: relay, gas })
-      assert.equal(decodeRevertReason(relayCall.returnValue), 'signature mismatch')
+      assert.equal(decodeRevertReason(relayCall.returnValue), 'FWD: signature mismatch')
     })
 
     it('should pay with token to make a call', async function () {

@@ -1,14 +1,13 @@
 import 'source-map-support/register'
 import { RelayProvider } from '@opengsn/gsn'
 import { decodeRevertReason, getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
-import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
+import { Address } from '@opengsn/gsn/dist/src/common/types/Aliases'
 import TypedRequestData, {
   GsnDomainSeparatorType,
   GsnRequestType
 } from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
 import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import { defaultEnvironment } from '@opengsn/gsn/dist/src/common/Environments'
-import { snapshot, revert, deployHub } from '@opengsn/gsn/dist/test/TestUtils'
 import { GsnTestEnvironment } from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
 
 import { constants, expectEvent } from '@openzeppelin/test-helpers'
@@ -23,11 +22,11 @@ import {
   ProxyDeployingPaymasterInstance,
   TestHubInstance,
   TestCounterInstance,
-  ProxyFactoryInstance, StakeManagerInstance
+  ProxyFactoryInstance, StakeManagerInstance, RelayHubInstance
 } from '../types/truffle-contracts'
-import { RelayHubInstance } from '@opengsn/gsn/dist/types/truffle-contracts'
 import { transferErc20Error } from './TokenPaymaster.test'
 import { GSNConfig } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
+import { RelayHubConfiguration } from '@opengsn/gsn/dist/src/common/types/RelayHubConfiguration'
 
 const RelayHub = artifacts.require('RelayHub')
 const TestHub = artifacts.require('TestHub')
@@ -40,6 +39,60 @@ const ProxyFactory = artifacts.require('ProxyFactory')
 const ProxyIdentity = artifacts.require('ProxyIdentity')
 const StakeManager = artifacts.require('StakeManager')
 const ProxyDeployingPaymaster = artifacts.require('ProxyDeployingPaymaster')
+
+// these are no longer exported
+export async function snapshot (): Promise<{ id: number, jsonrpc: string, result: string }> {
+  return await new Promise((resolve, reject) => {
+    // @ts-expect-error
+    web3.currentProvider.send({
+      jsonrpc: '2.0',
+      method: 'evm_snapshot',
+      id: Date.now()
+    }, (err: Error | null, snapshotId: { id: number, jsonrpc: string, result: string }) => {
+      if (err != null) { return reject(err) }
+      return resolve(snapshotId)
+    })
+  })
+}
+
+export async function revert (id: string): Promise<void> {
+  return await new Promise((resolve, reject) => {
+    // @ts-expect-error
+    web3.currentProvider.send({
+      jsonrpc: '2.0',
+      method: 'evm_revert',
+      params: [id],
+      id: Date.now()
+    }, (err: Error | null, result: any) => {
+      if (err != null) { return reject(err) }
+      return resolve(result)
+    })
+  })
+}
+
+export async function deployHub (
+  stakeManager: string,
+  penalizer: string,
+  configOverride: Partial<RelayHubConfiguration> = {}): Promise<RelayHubInstance> {
+  const relayHubConfiguration: RelayHubConfiguration = {
+    ...defaultEnvironment.relayHubConfiguration,
+    ...configOverride
+  }
+
+  // eslint-disable-next-line @typescript-eslint/return-await
+  return await RelayHub.new(
+    stakeManager,
+    penalizer,
+    relayHubConfiguration.maxWorkerCount,
+    relayHubConfiguration.gasReserve,
+    relayHubConfiguration.postOverhead,
+    relayHubConfiguration.gasOverhead,
+    relayHubConfiguration.maximumRecipientDeposit,
+    relayHubConfiguration.minimumUnstakeDelay,
+    relayHubConfiguration.minimumStake,
+    relayHubConfiguration.dataGasCostPerByte,
+    relayHubConfiguration.externalCallDataCostOverhead)
+}
 
 contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
   const tokensPerEther = 2
@@ -80,7 +133,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
     paymaster = await ProxyDeployingPaymaster.new([uniswap.address], proxyFactory.address)
     forwarder = await Forwarder.new({ gas: 1e7 })
     recipient = await TestProxy.new(forwarder.address, { gas: 1e7 })
-    stakeManager = await StakeManager.new()
+    stakeManager = await StakeManager.new(defaultEnvironment.maxUnstakeDelay)
     testHub = await TestHub.new(
       stakeManager.address,
       constants.ZERO_ADDRESS,
@@ -91,6 +144,8 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       defaultEnvironment.relayHubConfiguration.maximumRecipientDeposit,
       defaultEnvironment.relayHubConfiguration.minimumUnstakeDelay,
       defaultEnvironment.relayHubConfiguration.minimumStake,
+      defaultEnvironment.relayHubConfiguration.dataGasCostPerByte,
+      defaultEnvironment.relayHubConfiguration.externalCallDataCostOverhead,
       { gas: 10000000 })
     relayHub = await deployHub(stakeManager.address, constants.ZERO_ADDRESS)
     await paymaster.setRelayHub(relayHub.address)
@@ -104,6 +159,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
         to: recipient.address,
         nonce: '0',
         value: '0',
+        validUntil: '0',
         gas: 1e6.toString(),
         data: recipient.contract.methods.test().encodeABI()
       },
@@ -193,7 +249,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
             from: relayWorker,
             gas
           })
-          assert.equal(decodeRevertReason(relayCall.returnValue), 'signature mismatch')
+          assert.equal(decodeRevertReason(relayCall.returnValue), 'FWD: signature mismatch')
         })
 
         it('should accept because identity gave approval to the paymaster', async function () {
@@ -312,13 +368,16 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       const proxyIdentityArtifact = require('../build/contracts/ProxyIdentity')
       // start the GSN
       const host = (web3.currentProvider as HttpProvider).host
-      const testEnv = await GsnTestEnvironment.startGsn(host, true)
+      const testEnv = await GsnTestEnvironment.startGsn(host)
+      // TODO: fix
+      // @ts-expect-error
+      testEnv.httpServer.relayService?.config.maxAcceptanceBudget = 1e15.toString()
       // deposit Ether to the RelayHub for paymaster
       // need to convert to any because of namespace collision
-      hub = (await RelayHub.at(testEnv.deploymentResult.relayHubAddress)) as any as RelayHubInstance
+      hub = (await RelayHub.at(testEnv.contractsDeployment.relayHubAddress!)) as any as RelayHubInstance
       paymaster = await ProxyDeployingPaymaster.new([uniswap.address], proxyFactory.address)
       await paymaster.setRelayHub(hub.address)
-      await paymaster.setTrustedForwarder(testEnv.deploymentResult.forwarderAddress)
+      await paymaster.setTrustedForwarder(testEnv.contractsDeployment.forwarderAddress!)
       await hub.depositFor(paymaster.address, {
         value: 1e18.toString()
       })
@@ -330,6 +389,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
           nonce: '0',
           value: '0',
           data: '0x',
+          validUntil: '0',
           gas: 1e6.toString()
         },
         relayData: {
@@ -338,7 +398,7 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
           paymaster: paymaster.address,
           paymasterData: '0x',
           clientId: '2',
-          forwarder: testEnv.deploymentResult.forwarderAddress
+          forwarder: testEnv.contractsDeployment.forwarderAddress!
         }
       }
       proxyAddress = await paymaster.getPayer(relayRequest)
@@ -350,14 +410,16 @@ contract('ProxyDeployingPaymaster', ([senderAddress, relayWorker]) => {
       await assertDeployed(proxyAddress, false)
       proxy = new web3.eth.Contract(proxyIdentityArtifact.abi, proxyAddress)
       const gsnConfig: Partial<GSNConfig> = {
-        logLevel: 'error',
-        relayHubAddress: testEnv.deploymentResult.relayHubAddress,
-        forwarderAddress: testEnv.deploymentResult.forwarderAddress,
+        loggerConfiguration: {
+          logLevel: 'error'
+        },
         paymasterAddress: paymaster.address
       }
       encodedCall = counter.contract.methods.increment().encodeABI()
-      // @ts-expect-error
-      const relayProvider = await new RelayProvider(web3.currentProvider, gsnConfig).init()
+      const relayProvider = await RelayProvider.newProvider({
+        provider: web3.currentProvider as HttpProvider,
+        config: gsnConfig
+      }).init()
       proxy.setProvider(relayProvider)
     })
 

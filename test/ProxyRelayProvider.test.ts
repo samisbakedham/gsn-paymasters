@@ -1,6 +1,6 @@
 import { GsnTestEnvironment } from '@opengsn/gsn/dist/GsnTestEnvironment'
 import { AccountKeypair } from '@opengsn/gsn/dist/src/relayclient/AccountManager'
-import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
+import { Address } from '@opengsn/gsn/dist/src/common/types/Aliases'
 import { expectEvent } from '@openzeppelin/test-helpers'
 import { HttpProvider } from 'web3-core'
 import abi from 'web3-eth-abi'
@@ -21,7 +21,7 @@ const TestUniswap = artifacts.require('TestUniswap')
 const ProxyFactory = artifacts.require('ProxyFactory')
 const ProxyDeployingPaymaster = artifacts.require('ProxyDeployingPaymaster')
 
-contract('ProxyRelayProvider', function (accounts) {
+contract('ProxyRelayProvider', function () {
   let token: TestTokenInstance
   let proxyFactory: ProxyFactoryInstance
   let paymaster: ProxyDeployingPaymasterInstance
@@ -37,30 +37,39 @@ contract('ProxyRelayProvider', function (accounts) {
     token = await TestToken.at(await uniswap.tokenAddress())
     paymaster = await ProxyDeployingPaymaster.new([uniswap.address], proxyFactory.address)
     const {
-      deploymentResult: {
+      httpServer,
+      contractsDeployment: {
         relayHubAddress,
         forwarderAddress
       }
-    } = await GsnTestEnvironment.startGsn('localhost', true)
-    const hub = await RelayHub.at(relayHubAddress)
+    } = await GsnTestEnvironment.startGsn('localhost')
+
+    // TODO: fix
+    // @ts-expect-error
+    httpServer.relayService?.config.maxAcceptanceBudget = 1e15.toString()
+
+    const hub = await RelayHub.at(relayHubAddress!)
     await paymaster.setRelayHub(hub.address)
-    await paymaster.setTrustedForwarder(forwarderAddress)
+    await paymaster.setTrustedForwarder(forwarderAddress!)
     await hub.depositFor(paymaster.address, {
       value: 1e18.toString()
     })
     const gsnConfig: Partial<GSNConfig> = {
-      logLevel: 'error',
-      relayHubAddress,
-      forwarderAddress,
+      loggerConfiguration: {
+        logLevel: 'error'
+      },
       paymasterAddress: paymaster.address
     }
-    proxyRelayProvider = await new ProxyRelayProvider(
+    proxyRelayProvider = await ProxyRelayProvider.newProxyRelayProvider(
       proxyFactory.address,
-      web3.currentProvider as HttpProvider,
-      gsnConfig, {
-        asyncPaymasterData: async () => {
-          // @ts-expect-error
-          return abi.encodeParameters(['address'], [uniswap.address])
+      {
+        provider: web3.currentProvider as HttpProvider,
+        config: gsnConfig,
+        overrideDependencies: {
+          asyncPaymasterData: async () => {
+            // @ts-expect-error
+            return abi.encodeParameters(['address'], [uniswap.address])
+          }
         }
       }
     ).init()

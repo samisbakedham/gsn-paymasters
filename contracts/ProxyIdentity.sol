@@ -1,17 +1,17 @@
 /* solhint-disable no-inline-assembly */
 // SPDX-License-Identifier:MIT
 
-pragma solidity ^0.6.2;
+pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/upgrades/contracts/Initializable.sol";
+import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
 
 import "./interfaces/IERC725.sol";
 
 contract ProxyIdentity is IERC725, BaseRelayRecipient, Initializable {
-    string public override versionRecipient = "2.0.0+opengsn.erc725.irelayrecipient";
+    string public override versionRecipient = "2.2.0+opengsn.erc725.irelayrecipient";
 
     uint256 private constant OPERATION_CALL = 0;
     uint256 private constant OPERATION_CREATE = 1;

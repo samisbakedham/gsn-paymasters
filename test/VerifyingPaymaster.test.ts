@@ -1,15 +1,16 @@
 import { SampleRecipientInstance, VerifyingPaymasterInstance } from '../types/truffle-contracts'
 
-import { RelayProvider } from '@opengsn/gsn'
+import { GSNUnresolvedConstructorInput, RelayProvider } from '@opengsn/gsn'
 import { GsnTestEnvironment } from '@opengsn/gsn/dist/GsnTestEnvironment'
 import { expectRevert } from '@openzeppelin/test-helpers'
 import { GSNConfig } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
 import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import { PrefixedHexString } from 'ethereumjs-tx'
-import { AsyncDataCallback } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
+import { AsyncDataCallback } from '@opengsn/gsn/dist/src/common/types/Aliases'
 import { bufferToHex, privateToAddress } from 'ethereumjs-util'
 import { randomBytes } from 'crypto'
 import { getRequestHash, packForwardRequest, packRelayData, signRelayRequest } from '../src/VerifyingPaymasterUtils'
+import { HttpProvider } from 'web3-core'
 
 const VerifyingPaymaster = artifacts.require('VerifyingPaymaster')
 const SampleRecipient = artifacts.require('SampleRecipient')
@@ -28,6 +29,7 @@ contract('VerifyingPaymaster', ([from]) => {
           from: '0x'.padEnd(42, '2'),
           value: '1',
           nonce: '2',
+          validUntil: '0',
           gas: '3'
         },
         relayData: {
@@ -76,32 +78,38 @@ contract('VerifyingPaymaster', ([from]) => {
       signer = bufferToHex(privateToAddress(privkey))
 
       const {
-        deploymentResult: {
+        contractsDeployment: {
           relayHubAddress,
           forwarderAddress
         }
       } = await GsnTestEnvironment.startGsn('localhost')
 
       s = await SampleRecipient.new()
-      await s.setForwarder(forwarderAddress)
+      await s.setForwarder(forwarderAddress!)
 
       pm = await VerifyingPaymaster.new()
-      await pm.setRelayHub(relayHubAddress)
-      await pm.setTrustedForwarder(forwarderAddress)
+      await pm.setRelayHub(relayHubAddress!)
+      await pm.setTrustedForwarder(forwarderAddress!)
 
       await pm.setSigner(signer)
 
       await web3.eth.sendTransaction({ from, to: pm.address, value: 1e18 })
 
       gsnConfig = {
-        logLevel: 'error',
-        relayHubAddress,
-        forwarderAddress,
+        loggerConfiguration: {
+          logLevel: 'error'
+        },
         paymasterAddress: pm.address
       }
-      const p = new RelayProvider(web3.currentProvider as any, gsnConfig, {
-        asyncApprovalData: mockGetApprovalData
-      })
+      const input: GSNUnresolvedConstructorInput = {
+        provider: web3.currentProvider as HttpProvider,
+        config: gsnConfig,
+        overrideDependencies: {
+          asyncApprovalData: mockGetApprovalData
+        }
+      }
+      const p = RelayProvider.newProvider(input)
+      await p.init()
       // @ts-expect-error
       SampleRecipient.web3.setProvider(p)
     })

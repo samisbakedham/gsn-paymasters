@@ -1,5 +1,5 @@
 // SPDX-License-Identifier:MIT
-pragma solidity ^0.6.2;
+pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -22,7 +22,7 @@ contract TokenPaymaster is BasePaymaster {
     using SafeMath for uint256;
 
     function versionPaymaster() external override virtual view returns (string memory){
-        return "2.0.0+opengsn.token.ipaymaster";
+        return "2.2.0+opengsn.token.ipaymaster";
     }
 
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier:MIT
-pragma solidity ^0.6.2;
+pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
 import "@opengsn/gsn/contracts/interfaces/GsnTypes.sol";
@@ -21,7 +21,9 @@ contract TestHub is RelayHub {
         uint256 _gasOverhead,
         uint256 _maximumRecipientDeposit,
         uint256 _minimumUnstakeDelay,
-        uint256 _minimumStake) public RelayHub(_stakeManager,
+        uint256 _minimumStake,
+        uint256 _dataGasCostPerByte,
+        uint256 _externalCallDataCostOverhead) public RelayHub(_stakeManager,
         _penalizer,
         _maxWorkerCount,
         _gasReserve,
@@ -29,7 +31,9 @@ contract TestHub is RelayHub {
         _gasOverhead,
         _maximumRecipientDeposit,
         _minimumUnstakeDelay,
-        _minimumStake)
+        _minimumStake,
+        _dataGasCostPerByte,
+        _externalCallDataCostOverhead)
         // solhint-disable-next-line no-empty-blocks
     {}
 

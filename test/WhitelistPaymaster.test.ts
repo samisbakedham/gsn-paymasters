@@ -1,9 +1,10 @@
 import { SampleRecipientInstance, WhitelistPaymasterInstance } from '../types/truffle-contracts'
 
-import { RelayProvider } from '@opengsn/gsn'
+import { GSNUnresolvedConstructorInput, RelayProvider } from '@opengsn/gsn'
 import { GsnTestEnvironment } from '@opengsn/gsn/dist/GsnTestEnvironment'
 import { expectRevert } from '@openzeppelin/test-helpers'
 import { GSNConfig } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
+import { HttpProvider } from 'web3-core'
 
 const WhitelistPaymaster = artifacts.require('WhitelistPaymaster')
 const SampleRecipient = artifacts.require('SampleRecipient')
@@ -13,9 +14,9 @@ contract('WhitelistPaymaster', ([from, another]) => {
   let s: SampleRecipientInstance
   let s1: SampleRecipientInstance
   let gsnConfig: Partial<GSNConfig>
-  before(async () => {
+  before(async function () {
     const {
-      deploymentResult: {
+      contractsDeployment: {
         relayHubAddress,
         forwarderAddress
       }
@@ -23,30 +24,35 @@ contract('WhitelistPaymaster', ([from, another]) => {
 
     s = await SampleRecipient.new()
     s1 = await SampleRecipient.new()
-    await s.setForwarder(forwarderAddress)
-    await s1.setForwarder(forwarderAddress)
+    await s.setForwarder(forwarderAddress!)
+    await s1.setForwarder(forwarderAddress!)
 
     pm = await WhitelistPaymaster.new()
-    await pm.setRelayHub(relayHubAddress)
-    await pm.setTrustedForwarder(forwarderAddress)
+    await pm.setRelayHub(relayHubAddress!)
+    await pm.setTrustedForwarder(forwarderAddress!)
     await web3.eth.sendTransaction({ from, to: pm.address, value: 1e18 })
 
     console.log('pm', pm.address)
     console.log('s', s.address)
     console.log('s1', s1.address)
     gsnConfig = {
-      logLevel: 'error',
-      relayHubAddress,
-      forwarderAddress,
+      loggerConfiguration: {
+        logLevel: 'error'
+      },
       paymasterAddress: pm.address
     }
-    // @ts-expect-error
-    const p = new RelayProvider(web3.currentProvider, gsnConfig)
+
+    const input: GSNUnresolvedConstructorInput = {
+      provider: web3.currentProvider as HttpProvider,
+      config: gsnConfig
+    }
+    const p = RelayProvider.newProvider(input)
+    await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
   })
 
-  it('should allow a call without any whitelist', async () => {
+  it('should allow a call without any whitelist', async function () {
     await s.something()
   })
 

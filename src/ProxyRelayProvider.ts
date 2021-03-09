@@ -1,30 +1,37 @@
-import GsnTransactionDetails from '@opengsn/gsn/dist/src/relayclient/types/GsnTransactionDetails'
+import GsnTransactionDetails from '@opengsn/gsn/dist/src/common/types/GsnTransactionDetails'
 import { RelayClient } from '@opengsn/gsn/dist/src/relayclient/RelayClient'
 import { JsonRpcCallback, RelayProvider } from '@opengsn/gsn/dist/src/relayclient/RelayProvider'
-import { GSNConfig, GSNDependencies } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
-import { Address } from '@opengsn/gsn/dist/src/relayclient/types/Aliases'
+import { Address } from '@opengsn/gsn/dist/src/common/types/Aliases'
 
-import { HttpProvider } from 'web3-core'
 import { JsonRpcPayload } from 'web3-core-helpers'
 import Contract from 'web3-eth-contract'
 
 import ProxyIdentityArtifact from './compiled/ProxyIdentity.json'
 import ProxyFactoryArtifact from './compiled/ProxyFactory.json'
+import { GSNUnresolvedConstructorInput } from '@opengsn/gsn'
 
 export default class ProxyRelayProvider extends RelayProvider {
   private readonly proxyFactoryAddress: Address
 
   constructor (
     proxyFactoryAddress: Address,
-    origProvider: HttpProvider,
-    gsnConfig: Partial<GSNConfig>,
-    overrideDependencies?: Partial<GSNDependencies>,
-    relayClient?: RelayClient) {
-    super(origProvider,
-      gsnConfig,
-      overrideDependencies,
+    relayClient: RelayClient) {
+    super(
       relayClient)
     this.proxyFactoryAddress = proxyFactoryAddress
+  }
+
+  static newProvider (
+    input: GSNUnresolvedConstructorInput
+  ): RelayProvider {
+    throw new Error('Use newProxyRelayProvider() instead')
+  }
+
+  static newProxyRelayProvider (
+    proxyFactoryAddress: Address,
+    input: GSNUnresolvedConstructorInput
+  ): ProxyRelayProvider {
+    return new ProxyRelayProvider(proxyFactoryAddress, new RelayClient(input))
   }
 
   _ethSendTransaction (payload: JsonRpcPayload, callback: JsonRpcCallback): void {

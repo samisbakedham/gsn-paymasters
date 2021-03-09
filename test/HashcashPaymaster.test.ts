@@ -8,6 +8,8 @@ import RelayRequest from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
 import { GsnTestEnvironment } from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
 import { expectRevert } from '@openzeppelin/test-helpers'
 import { HttpProvider } from 'web3-core'
+import { GSNUnresolvedConstructorInput } from '@opengsn/gsn/dist/src/relayclient/RelayClient'
+import { HttpServer } from '@opengsn/gsn/dist/src/relayserver/HttpServer'
 
 const HashcashPaymaster = artifacts.require('HashcashPaymaster')
 const SampleRecipient = artifacts.require('SampleRecipient')
@@ -16,33 +18,45 @@ contract('HashcashPaymaster', ([from]) => {
   let pm: HashcashPaymasterInstance
   let s: SampleRecipientInstance
   let gsnConfig: Partial<GSNConfig>
+  let relayHubAddress: string | undefined
+  let forwarderAddress: string | undefined
+  let httpServer: HttpServer
 
   before(async () => {
-    const {
-      deploymentResult: {
+    ({
+      httpServer,
+      contractsDeployment: {
         relayHubAddress,
         forwarderAddress
       }
-    } = await GsnTestEnvironment.startGsn('localhost')
+    } = await GsnTestEnvironment.startGsn('localhost'))
+
+    // TODO: fix
+    // @ts-expect-error
+    httpServer.relayService?.config.checkInterval = 1000
 
     s = await SampleRecipient.new()
-    await s.setForwarder(forwarderAddress)
+    await s.setForwarder(forwarderAddress!)
 
     pm = await HashcashPaymaster.new(10)
-    await pm.setRelayHub(relayHubAddress)
-    await pm.setTrustedForwarder(forwarderAddress)
+    await pm.setRelayHub(relayHubAddress!)
+    await pm.setTrustedForwarder(forwarderAddress!)
     await web3.eth.sendTransaction({ from, to: pm.address, value: 1e18 })
 
     gsnConfig = {
-      logLevel: 'error',
-      relayHubAddress,
-      forwarderAddress,
+      loggerConfiguration: {
+        logLevel: 'error'
+      },
       paymasterAddress: pm.address
     }
   })
 
   it('should fail to send without approvalData', async () => {
-    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig)
+    const input: GSNUnresolvedConstructorInput = {
+      provider: web3.currentProvider as HttpProvider,
+      config: gsnConfig
+    }
+    const p = RelayProvider.newProvider(input)
     await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
@@ -50,9 +64,15 @@ contract('HashcashPaymaster', ([from]) => {
   })
 
   it('should fail with no wrong hash', async () => {
-    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
-      asyncApprovalData: async () => '0x'.padEnd(2 + 64 * 2, '0')
-    })
+    const input: GSNUnresolvedConstructorInput = {
+      provider: web3.currentProvider as HttpProvider,
+      config: gsnConfig,
+      overrideDependencies:
+        {
+          asyncApprovalData: async () => '0x'.padEnd(2 + 64 * 2, '0')
+        }
+    }
+    const p = RelayProvider.newProvider(input)
     await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
@@ -61,9 +81,15 @@ contract('HashcashPaymaster', ([from]) => {
   })
 
   it('should fail low difficulty', async () => {
-    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
-      asyncApprovalData: createHashcashAsyncApproval(1)
-    })
+    const input: GSNUnresolvedConstructorInput = {
+      provider: web3.currentProvider as HttpProvider,
+      config: gsnConfig,
+      overrideDependencies:
+        {
+          asyncApprovalData: createHashcashAsyncApproval(1)
+        }
+    }
+    const p = RelayProvider.newProvider(input)
     await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
@@ -73,9 +99,16 @@ contract('HashcashPaymaster', ([from]) => {
 
   it('should succeed with proper difficulty', async function () {
     this.timeout(35000)
-    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
-      asyncApprovalData: createHashcashAsyncApproval(15)
-    })
+
+    const input: GSNUnresolvedConstructorInput = {
+      provider: web3.currentProvider as HttpProvider,
+      config: gsnConfig,
+      overrideDependencies:
+        {
+          asyncApprovalData: createHashcashAsyncApproval(15)
+        }
+    }
+    const p = RelayProvider.newProvider(input)
     await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
@@ -99,14 +132,19 @@ contract('HashcashPaymaster', ([from]) => {
   })
 
   it('should calculate approval in advance', async () => {
-    const approval = await calculateHashcashApproval(web3, from, s.address, gsnConfig.forwarderAddress ?? '', pm.address)
+    const approval = await calculateHashcashApproval(web3, from, s.address, forwarderAddress ?? '', pm.address)
     console.log('approval=', approval)
-    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
-      asyncApprovalData: async (req: RelayRequest) => {
-        // console.log('req=', req)
-        return approval!
+    const input: GSNUnresolvedConstructorInput = {
+      provider: web3.currentProvider as HttpProvider,
+      config: gsnConfig,
+      overrideDependencies: {
+        asyncApprovalData: async (req: RelayRequest) => {
+          // console.log('req=', req)
+          return approval!
+        }
       }
-    })
+    }
+    const p = RelayProvider.newProvider(input)
     await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
@@ -118,20 +156,33 @@ contract('HashcashPaymaster', ([from]) => {
     // read next valid hashash approval data, and always return it.
     const approvalfunc = createHashcashAsyncApproval(15)
     let saveret: string
-    const p = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
-      asyncApprovalData: async (request: RelayRequest) => {
-        saveret = await approvalfunc(request) ?? ''
-        return saveret
-      }
-    })
+
+    const input: GSNUnresolvedConstructorInput = {
+      provider: web3.currentProvider as HttpProvider,
+      config: gsnConfig,
+      overrideDependencies:
+        {
+          asyncApprovalData: async (request: RelayRequest) => {
+            saveret = await approvalfunc(request) ?? ''
+            return saveret
+          }
+        }
+    }
+    const p = RelayProvider.newProvider(input)
     await p.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p)
     await s.something()
 
-    const p1 = new RelayProvider(web3.currentProvider as HttpProvider, gsnConfig, {
-      asyncApprovalData: async (req: RelayRequest) => await Promise.resolve(saveret)
-    })
+    const input1: GSNUnresolvedConstructorInput = {
+      provider: web3.currentProvider as HttpProvider,
+      config: gsnConfig,
+      overrideDependencies:
+        {
+          asyncApprovalData: async (req: RelayRequest) => saveret
+        }
+    }
+    const p1 = RelayProvider.newProvider(input1)
     await p1.init()
     // @ts-expect-error
     SampleRecipient.web3.setProvider(p1)

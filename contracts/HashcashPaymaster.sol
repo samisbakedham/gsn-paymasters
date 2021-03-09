@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity ^0.6.2;
+pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
 import "./AcceptEverythingPaymaster.sol";
@@ -21,7 +21,7 @@ interface HashcashDifficulty {
 contract HashcashPaymaster is AcceptEverythingPaymaster, HashcashDifficulty {
 
     function versionPaymaster() external view override virtual returns (string memory){
-        return "2.0.0+opengsn.hashcash.ipaymaster";
+        return "2.2.0+opengsn.hashcash.ipaymaster";
     }
 
     uint8 public override difficulty;
