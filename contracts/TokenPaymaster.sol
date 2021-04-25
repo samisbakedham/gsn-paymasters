@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "@opengsn/gsn/contracts/forwarder/IForwarder.sol";
-import "@opengsn/gsn/contracts/BasePaymaster.sol";
+import "@opengsn/contracts/src/forwarder/IForwarder.sol";
+import "@opengsn/contracts/src/BasePaymaster.sol";
 
 import "./interfaces/IUniswap.sol";
 
@@ -33,7 +33,7 @@ contract TokenPaymaster is BasePaymaster {
 
     uint public gasUsedByPost;
 
-    constructor(IUniswap[] memory _uniswaps) public {
+    constructor(IUniswap[] memory _uniswaps) {
         uniswaps = _uniswaps;
 
         for (uint256 i = 0; i < _uniswaps.length; i++){

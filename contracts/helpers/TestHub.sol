@@ -2,10 +2,10 @@
 pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
-import "@opengsn/gsn/contracts/interfaces/GsnTypes.sol";
-import "@opengsn/gsn/contracts/interfaces/IPaymaster.sol";
+import "@opengsn/contracts/src/utils/GsnTypes.sol";
+import "@opengsn/contracts/src/interfaces/IPaymaster.sol";
 
-import "@opengsn/gsn/contracts/RelayHub.sol";
+import "@opengsn/contracts/src/RelayHub.sol";
 
 /**
  * This mock relay hub contract is only used to test the paymaster's 'pre-' and 'postRelayedCall' in isolation.

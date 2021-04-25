@@ -2,7 +2,7 @@
 pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
-import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
+import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
 // pass-through paymaster.
 // should override it and re-implement acceptRelayedCall. use "super" on success

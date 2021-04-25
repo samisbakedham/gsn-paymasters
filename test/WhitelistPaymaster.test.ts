@@ -1,9 +1,9 @@
 import { SampleRecipientInstance, WhitelistPaymasterInstance } from '../types/truffle-contracts'
 
-import { GSNUnresolvedConstructorInput, RelayProvider } from '@opengsn/gsn'
-import { GsnTestEnvironment } from '@opengsn/gsn/dist/GsnTestEnvironment'
+import { GSNUnresolvedConstructorInput, RelayProvider } from '@opengsn/provider'
+import { GsnTestEnvironment } from '@opengsn/dev'
 import { expectRevert } from '@openzeppelin/test-helpers'
-import { GSNConfig } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
+import { GSNConfig } from '@opengsn/provider'
 import { HttpProvider } from 'web3-core'
 
 const WhitelistPaymaster = artifacts.require('WhitelistPaymaster')

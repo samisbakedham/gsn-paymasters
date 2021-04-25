@@ -1,14 +1,14 @@
 import 'source-map-support/register'
-import { RelayProvider } from '@opengsn/gsn'
-import { decodeRevertReason, getEip712Signature } from '@opengsn/gsn/dist/src/common/Utils'
-import { Address } from '@opengsn/gsn/dist/src/common/types/Aliases'
+import { RelayProvider } from '@opengsn/provider'
+import { decodeRevertReason, getEip712Signature } from '@opengsn/common'
+import { Address } from '@opengsn/common/dist/types/Aliases'
 import TypedRequestData, {
   GsnDomainSeparatorType,
   GsnRequestType
-} from '@opengsn/gsn/dist/src/common/EIP712/TypedRequestData'
-import RelayRequest, { cloneRelayRequest } from '@opengsn/gsn/dist/src/common/EIP712/RelayRequest'
-import { defaultEnvironment } from '@opengsn/gsn/dist/src/common/Environments'
-import { GsnTestEnvironment } from '@opengsn/gsn/dist/src/relayclient/GsnTestEnvironment'
+} from '@opengsn/common/dist/EIP712/TypedRequestData'
+import  {RelayRequest, cloneRelayRequest } from '@opengsn/common/dist/EIP712/RelayRequest'
+import { defaultEnvironment } from '@opengsn/common/dist/Environments'
+import { GsnTestEnvironment } from '@opengsn/dev'
 
 import { constants, expectEvent } from '@openzeppelin/test-helpers'
 import { PrefixedHexString } from 'ethereumjs-tx'
@@ -25,8 +25,8 @@ import {
   ProxyFactoryInstance, StakeManagerInstance, RelayHubInstance
 } from '../types/truffle-contracts'
 import { transferErc20Error } from './TokenPaymaster.test'
-import { GSNConfig } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
-import { RelayHubConfiguration } from '@opengsn/gsn/dist/src/common/types/RelayHubConfiguration'
+import { GSNConfig } from '@opengsn/provider'
+import { RelayHubConfiguration } from '@opengsn/common/dist/types/RelayHubConfiguration'
 
 const RelayHub = artifacts.require('RelayHub')
 const TestHub = artifacts.require('TestHub')

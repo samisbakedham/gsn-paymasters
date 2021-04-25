@@ -13,7 +13,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
 
     ProxyFactory public proxyFactory;
 
-    constructor(IUniswap[] memory _uniswaps, ProxyFactory _proxyFactory) public TokenPaymaster(_uniswaps)  {
+    constructor(IUniswap[] memory _uniswaps, ProxyFactory _proxyFactory) TokenPaymaster(_uniswaps)  {
         proxyFactory = _proxyFactory;
     }
 
@@ -49,6 +49,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
     function deployProxy(address owner) public returns (ProxyIdentity) {
         ProxyIdentity proxy = proxyFactory.deployProxy(owner);
         proxy.initialize(address(trustedForwarder), tokens);
+        return proxy;
     }
 
     function postRelayedCall(
@@ -68,7 +69,7 @@ contract ProxyDeployingPaymaster is TokenPaymaster {
     function getGasAndDataLimits()
     public
     override
-    view
+    pure
     returns (
         GasAndDataLimits memory limits
     ) {

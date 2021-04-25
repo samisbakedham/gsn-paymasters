@@ -1,5 +1,5 @@
 import { IStakeManagerInstance } from '../types/truffle-contracts'
-import { RelayHubInstance } from '@opengsn/gsn/dist/types/truffle-contracts'
+import { RelayHubInstance } from '@opengsn/contracts/types/truffle-contracts'
 
 export async function revertReason (func: Promise<any>): Promise<string> {
   try {

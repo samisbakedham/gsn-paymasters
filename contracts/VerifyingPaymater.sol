@@ -2,8 +2,8 @@
 pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
-import "@opengsn/gsn/contracts/BasePaymaster.sol";
-import "@opengsn/gsn/contracts/forwarder/IForwarder.sol";
+import "@opengsn/contracts/src/BasePaymaster.sol";
+import "@opengsn/contracts/src/forwarder/IForwarder.sol";
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 
 /**

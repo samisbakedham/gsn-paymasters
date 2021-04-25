@@ -1,6 +1,6 @@
-import { GsnTestEnvironment } from '@opengsn/gsn/dist/GsnTestEnvironment'
-import { AccountKeypair } from '@opengsn/gsn/dist/src/relayclient/AccountManager'
-import { Address } from '@opengsn/gsn/dist/src/common/types/Aliases'
+import { GsnTestEnvironment } from '@opengsn/dev'
+import { AccountKeypair } from '@opengsn/provider/dist/AccountManager'
+import { Address } from '@opengsn/common/dist/types/Aliases'
 import { expectEvent } from '@openzeppelin/test-helpers'
 import { HttpProvider } from 'web3-core'
 import abi from 'web3-eth-abi'
@@ -12,7 +12,7 @@ import {
   TestTokenInstance
 } from '../types/truffle-contracts'
 import ProxyRelayProvider from '../src/ProxyRelayProvider'
-import { GSNConfig } from '@opengsn/gsn/dist/src/relayclient/GSNConfigurator'
+import { GSNConfig } from '@opengsn/provider'
 
 const RelayHub = artifacts.require('RelayHub')
 const TestToken = artifacts.require('TestToken')

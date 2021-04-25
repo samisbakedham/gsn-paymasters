@@ -6,7 +6,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
-import "@opengsn/gsn/contracts/BaseRelayRecipient.sol";
+import "@opengsn/contracts/src/BaseRelayRecipient.sol";
 
 import "./interfaces/IERC725.sol";
 
@@ -23,7 +23,7 @@ contract ProxyIdentity is IERC725, BaseRelayRecipient, Initializable {
     // solhint-disable-next-line no-empty-blocks
     receive () external payable {}
 
-    constructor(address _owner) public {
+    constructor(address _owner) {
         owner = _owner;
     }
 

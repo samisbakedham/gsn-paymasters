@@ -25,7 +25,7 @@ contract HashcashPaymaster is AcceptEverythingPaymaster, HashcashDifficulty {
     }
 
     uint8 public override difficulty;
-    constructor(uint8 _difficulty) public {
+    constructor(uint8 _difficulty) {
         difficulty = _difficulty;
     }
 

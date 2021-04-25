@@ -4,7 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "@opengsn/gsn/contracts/RelayHub.sol";
+import "@opengsn/contracts/src/RelayHub.sol";
 
 import "../TokenPaymaster.sol";
 

@@ -2,7 +2,7 @@
 pragma solidity ^0.7.6;
 pragma experimental ABIEncoderV2;
 
-import "@opengsn/gsn/contracts/BasePaymaster.sol";
+import "@opengsn/contracts/src/BasePaymaster.sol";
 
 // accept everything.
 // this paymaster accepts any request.
