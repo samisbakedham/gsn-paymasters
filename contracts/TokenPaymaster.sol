@@ -70,7 +70,7 @@ contract TokenPaymaster is BasePaymaster {
             return (tokens[0], uniswaps[0]);
         }
 
-        require(paymasterData.length==32, "invalid uniswap address in paymasterData");
+        require(paymasterData.length==32, "invalid uniswap in paymasterData");
         uniswap = abi.decode(paymasterData, (IUniswap));
         require(supportedUniswaps[uniswap], "unsupported token uniswap");
         token = IERC20(uniswap.tokenAddress());

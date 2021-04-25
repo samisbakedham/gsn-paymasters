@@ -2,6 +2,7 @@
 
 import { TestTokenInstance, TestUniswapInstance } from '../types/truffle-contracts'
 import BN from 'bn.js'
+import { MAX_INTEGER } from 'ethereumjs-util'
 
 const TestUniswap = artifacts.require('TestUniswap.sol')
 const TestToken = artifacts.require('TestToken.sol')
@@ -14,7 +15,7 @@ contract('#TestUniswap', ([from]) => {
     uniswap = await TestUniswap.new(2, 1, { value: 5e18 })
     token = await TestToken.at(await uniswap.tokenAddress())
     // approve uniswap to take our tokens.
-    await token.approve(uniswap.address, -1)
+    await token.approve(uniswap.address, MAX_INTEGER)
   })
 
   it('check exchange rate', async () => {
@@ -42,7 +43,7 @@ contract('#TestUniswap', ([from]) => {
     const target = '0x' + '1'.repeat(40)
     const tokensBefore = await token.balanceOf(from)
     const ethBefore = await web3.eth.getBalance(target)
-    await uniswap.tokenToEthTransferOutput(2e18.toString(), -1, -1, target)
+    await uniswap.tokenToEthTransferOutput(2e18.toString(), MAX_INTEGER, MAX_INTEGER, target)
     const tokensAfter = await token.balanceOf(from)
 
     const ethAfter = await web3.eth.getBalance(target)

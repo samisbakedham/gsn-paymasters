@@ -1,12 +1,13 @@
 import 'source-map-support/register'
-import { RelayProvider } from '@opengsn/provider'
+import { RelayProvider, GSNConfig } from '@opengsn/provider'
 import { decodeRevertReason, getEip712Signature } from '@opengsn/common'
 import { Address } from '@opengsn/common/dist/types/Aliases'
-import TypedRequestData, {
+import {
+  TypedRequestData,
   GsnDomainSeparatorType,
   GsnRequestType
 } from '@opengsn/common/dist/EIP712/TypedRequestData'
-import  {RelayRequest, cloneRelayRequest } from '@opengsn/common/dist/EIP712/RelayRequest'
+import { RelayRequest, cloneRelayRequest } from '@opengsn/common/dist/EIP712/RelayRequest'
 import { defaultEnvironment } from '@opengsn/common/dist/Environments'
 import { GsnTestEnvironment } from '@opengsn/dev'
 
@@ -25,7 +26,7 @@ import {
   ProxyFactoryInstance, StakeManagerInstance, RelayHubInstance
 } from '../types/truffle-contracts'
 import { transferErc20Error } from './TokenPaymaster.test'
-import { GSNConfig } from '@opengsn/provider'
+
 import { RelayHubConfiguration } from '@opengsn/common/dist/types/RelayHubConfiguration'
 
 const RelayHub = artifacts.require('RelayHub')

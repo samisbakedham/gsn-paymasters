@@ -3,13 +3,15 @@ import {
 } from '../src/HashCashApproval'
 import { HashcashPaymasterInstance, SampleRecipientInstance } from '../types/truffle-contracts'
 import { GSNConfig, RelayProvider } from '@opengsn/provider'
-import {RelayRequest} from '@opengsn/common/dist/EIP712/RelayRequest'
+import { RelayRequest } from '@opengsn/common/dist/EIP712/RelayRequest'
 
 import { GsnTestEnvironment } from '@opengsn/dev'
 import { expectRevert } from '@openzeppelin/test-helpers'
 import { HttpProvider } from 'web3-core'
 import { GSNUnresolvedConstructorInput } from '@opengsn/provider/dist/RelayClient'
 import { HttpServer } from '@opengsn/relay/dist/HttpServer'
+
+import 'source-map-support/register'
 
 const HashcashPaymaster = artifacts.require('HashcashPaymaster')
 const SampleRecipient = artifacts.require('SampleRecipient')

@@ -10,7 +10,7 @@ contract  ProxyFactory {
 
     event ProxyDeployed(address proxyAddress);
 
-    function calculateAddress(address owner) view public returns (address){
+    function calculateAddress(address owner) public view returns (address){
         return address(uint256(keccak256(
                 abi.encodePacked(
                     uint8(0xff),
@@ -24,7 +24,7 @@ contract  ProxyFactory {
         address calculatedAddress = calculateAddress(owner);
         if (!calculatedAddress.isContract()) {
             ProxyIdentity proxyIdentity = new ProxyIdentity{salt: 0}(owner);
-            require(calculatedAddress == address(proxyIdentity), "FATAL: create2 returned wrong address...");
+            require(calculatedAddress == address(proxyIdentity), "FATAL: create2 wrong address");
             emit ProxyDeployed(calculatedAddress);
         }
         return ProxyIdentity(payable(calculatedAddress));

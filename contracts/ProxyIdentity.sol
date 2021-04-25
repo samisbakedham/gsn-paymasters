@@ -35,7 +35,7 @@ contract ProxyIdentity is IERC725, BaseRelayRecipient, Initializable {
     }
 
     modifier onlyOwner() {
-        require(_msgSender() == owner, "ProxyIdentity: caller is not the owner");
+        require(_msgSender() == owner, "ProxyIdentity: caller not owner");
         _;
     }
 
@@ -70,7 +70,7 @@ contract ProxyIdentity is IERC725, BaseRelayRecipient, Initializable {
         onlyOwner
     {
         if (_operationType == OPERATION_CALL) {
-            require(executeCall(_to, _value, _data));
+            require(executeCall(_to, _value, _data), "executeCall failed");
         } else if (_operationType == OPERATION_CREATE) {
             address newContract = executeCreate(_data);
             emit ContractCreated(newContract);
