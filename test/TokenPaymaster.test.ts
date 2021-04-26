@@ -287,6 +287,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       })
 
       const rejected = ret.logs.find(log => log.event === 'TransactionRejectedByPaymaster')
+      // @ts-expect-error
       assert.ok(rejected == null, `Rejected with reason: ${decodeRevertReason(rejected?.args.reason) as string}`)
       const relayed = ret.logs.find(log => log.event === 'TransactionRelayed')
       // @ts-expect-error
@@ -294,13 +295,17 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       const chargedEvent = events.find((e: any) => e.event === 'TokensCharged')
 
       // console.log({ relayed, chargedEvent })
+      // @ts-expect-error
       console.log('charged: ', relayed!.args.charge.toString())
+      // @ts-expect-error
       assert.equal(relayed!.args.status, 0)
       const postTokens = await token.balanceOf(recipient.address)
       const usedTokens = preTokens.sub(postTokens)
 
       console.log('recipient tokens balance change (used tokens): ', usedTokens.toString())
+      // @ts-expect-error
       console.log('reported charged tokens in TokensCharged: ', chargedEvent.args.tokenActualCharge.toString())
+      // @ts-expect-error
       const expectedTokenCharge = await uniswap.getTokenToEthOutputPrice(chargedEvent.args.ethActualCharge)
       assert.closeTo(usedTokens.toNumber(), expectedTokenCharge.toNumber(), 1000)
       const postBalance = await hub.balanceOf(paymaster.address)
