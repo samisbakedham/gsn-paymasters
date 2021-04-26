@@ -3,16 +3,17 @@
 import { TestTokenInstance, TestUniswapInstance } from '../types/truffle-contracts'
 import BN from 'bn.js'
 import { MAX_INTEGER } from 'ethereumjs-util'
+import { toWei } from 'web3-utils'
 
-const TestUniswap = artifacts.require('TestUniswap.sol')
-const TestToken = artifacts.require('TestToken.sol')
+const TestUniswap = artifacts.require('TestUniswap')
+const TestToken = artifacts.require('TestToken')
 
 contract('#TestUniswap', ([from]) => {
   let uniswap: TestUniswapInstance
   let token: TestTokenInstance
 
   before(async () => {
-    uniswap = await TestUniswap.new(2, 1, { value: 5e18 })
+    uniswap = await TestUniswap.new(2, 1, { value: toWei('5') })
     token = await TestToken.at(await uniswap.tokenAddress())
     // approve uniswap to take our tokens.
     await token.approve(uniswap.address, MAX_INTEGER)
