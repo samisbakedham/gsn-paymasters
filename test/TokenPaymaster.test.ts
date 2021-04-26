@@ -180,7 +180,7 @@ contract('TokenPaymaster', ([from, relay, relayOwner, nonUniswap]) => {
       it('should reject if unknown paymasterData', async () => {
         const req = mergeData(relayRequest, { paymasterData: '0x1234' })
         const signature = await getEip712Signature(web3, new TypedRequestData(1, forwarder.address, req))
-        assert.equal(await revertReason(testHub.callPreRC(req, signature, '0x', 1e6)), 'invalid uniswap address in paymasterData -- Reason given: invalid uniswap address in paymasterData.')
+        assert.equal(await revertReason(testHub.callPreRC(req, signature, '0x', 1e6)), 'invalid uniswap in paymasterData -- Reason given: invalid uniswap address in paymasterData.')
       })
 
       it('should reject if unsupported uniswap in paymasterData', async () => {
