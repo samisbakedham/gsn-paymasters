@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@opengsn/gsn/contracts/BasePaymaster.sol";
 import "@opengsn/gsn/contracts/forwarder/IForwarder.sol";
+import "@opengsn/gsn/contracts/interfaces/IRelayHub.sol";
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 
 /**
@@ -23,7 +24,7 @@ import "@openzeppelin/contracts/cryptography/ECDSA.sol";
  */
 contract VerifyingPaymaster is Ownable, BasePaymaster {
 
-    address public signer;
+    mapping(address=>uint256) public signerBalances;
 
     function preRelayedCall(
         GsnTypes.RelayRequest calldata relayRequest,
@@ -35,14 +36,16 @@ contract VerifyingPaymaster is Ownable, BasePaymaster {
     override
     virtual
     returns (bytes memory context, bool revertOnRecipientRevert) {
-        (signature, maxPossibleGas);
+        (signature);
 
         require(approvalData.length == 65, "invalid approvalData signature");
 
         bytes32 requestHash = getRequestHash(relayRequest);
-        require(signer == ECDSA.recover(requestHash, approvalData), "wrong approvalData signature");
+        uint256 maxPossibleGasCost = relayRequest.relayData.gasPrice * maxPossibleGas;
+        address signer = ECDSA.recover(requestHash, approvalData);
+        require(signerBalances[signer] >= maxPossibleGasCost, "preRC: signer does not have enough");
 
-        return ("", false);
+        return (abi.encodePacked(signer), false);
     }
 
     function getRequestHash(GsnTypes.RelayRequest calldata relayRequest) public pure returns (bytes32) {
@@ -69,13 +72,24 @@ contract VerifyingPaymaster is Ownable, BasePaymaster {
         GsnTypes.RelayData calldata relayData
     ) external override virtual {
         (context, success, gasUseWithoutPost, relayData);
+        address signer = bytesToAddress(context);
+        uint256 oldBalance = signerBalances[signer];
+        require(oldBalance > gasUseWithoutPost, "postRC: signer does not have enough");
+        signerBalances[signer] = oldBalance - gasUseWithoutPost;
+    }
+
+    function bytesToAddress(bytes memory bys) private pure returns (address addr) {
+        assembly {
+            addr := mload(add(bys,20))
+        } 
     }
 
     function versionPaymaster() external view override virtual returns (string memory){
         return "2.2.0+opengsn.vpm.ipaymaster";
     }
 
-    function setSigner(address _signer) public onlyOwner {
-        signer = _signer;
+    function depositForSigner(address relayHub, address signer) public payable {
+        IRelayHub(relayHub).depositFor{value: msg.value}(address(this));
+        signerBalances[signer] += msg.value;
     }
 }
